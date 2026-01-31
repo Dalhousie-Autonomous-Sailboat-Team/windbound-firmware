@@ -19,8 +19,8 @@
 #include "user_main.h"
 
 /* Thread flag definitions */
-#define I2C_FLAG_DONE (1U << 0)
-#define I2C_FLAG_ERROR (1U << 1)
+#define I2C_FLAG_DONE (1U << 0)  // 00000001
+#define I2C_FLAG_ERROR (1U << 1) // 00000010
 
 #define I2C_MUX_ADDRESS (0x70 << 1) /* I2C address for the multiplexer */
 
@@ -135,7 +135,7 @@ static void I2C_ExecuteTransaction(
     *transaction->success = false;
     osThreadFlagsClear(I2C_FLAG_DONE | I2C_FLAG_ERROR);
 
-    /* Configure I2C multiplexer if required */
+    /* Configure I2C multiplexer if required */ 
     if (!I2C_SetMuxChannel(
             hi2c,
             transaction->mux_channel,
@@ -156,7 +156,7 @@ static void I2C_ExecuteTransaction(
                     transaction->write_length),
                 transaction->timeout_ms))
         {
-            I2C_FAIL();
+            I2C_FAIL(); 
         }
         break;
 

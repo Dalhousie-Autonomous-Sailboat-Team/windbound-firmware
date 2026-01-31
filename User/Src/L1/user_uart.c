@@ -101,7 +101,7 @@ void Debug_Print_String(const char *string)
  * @brief Receive Complete Callback
  * @param huart Pointer to UART handle
  */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+void HAL_UART_RxCpltCallback (UART_HandleTypeDef *huart)
 {
     if (huart == &huart4)
     {

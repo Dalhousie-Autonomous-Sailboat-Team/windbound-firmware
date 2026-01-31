@@ -134,6 +134,7 @@ void UARTParserTask(void *argument)
             /* Handle data from UART4 */
             ProcessDebugData(uart_char.data);
             break;
+
         default:
             continue;
         }
