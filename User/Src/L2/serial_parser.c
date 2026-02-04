@@ -223,7 +223,8 @@ static void ProcessWindvaneData(uint8_t data)
         if (match_index == NMEA_IIMWV_LEN)
         {
             // We have a full $IIMWV sentence, send to windvane parser
-            WindVane_Parse_NMEA_Sentence(nmea_sentence);
+            WindSample_t sample;
+            WindVane_Parse_NMEA_Sentence(nmea_sentence , &sample);
 
         }
 
