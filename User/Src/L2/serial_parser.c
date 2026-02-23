@@ -56,30 +56,12 @@ static void WindVaneBuf_Push(WindSample_t *sample)
 }
 
 
-static bool WindVane_Parse_NMEA_Sentence(const char *nmea_sentence, WindSample_t *sample)
+static bool WindVane_Parse_NMEA_Sentence(const char *sentence, WindSample_t *sample)
 {
-    char ref;
-    char status;
-
-    /* Example:
-       $IIMWV,225.0,R,10.5,N,A*hh
-    */
-
-    if (sscanf(nmea_sentence,
-               "$IIMWV,%f,%c,%f,%c,%c",
-               &sample->direction,
-               &sample->reference,
-               &sample->speed,
-               &sample->speed_unit,
-               &sample->status) != 5)
-        return false;
-
-    if (sample->status != 'A')
-        return false;
-
-    return true;
-
+  
 }
+
+
 
 
 
@@ -177,7 +159,7 @@ static void ProcessDebugData(uint8_t data)
 
 static void ProcessWindvaneData(uint8_t data)
 {
-    /* We only want the $IIMWV NMEA sentence the windvane */
+    /* We only want the $IIMWV NMEA sentence from the windvane */
 
     static char nmea_sentence[64];
     static uint8_t index = 0;
@@ -223,10 +205,16 @@ static void ProcessWindvaneData(uint8_t data)
         if (match_index == NMEA_IIMWV_LEN)
         {
             // We have a full $IIMWV sentence, send to windvane parser
-            Debug_Print_String("Received NMEA Sentence: ");
-            // WindSample_t sample;
-            // WindVane_Parse_NMEA_Sentence(nmea_sentence , &sample);
-
+            WindSample_t sample;
+            if (WindVane_Parse_NMEA_Sentence(nmea_sentence, &sample))
+            {
+                //WindVaneBuf_Push(&sample);
+                // For now, just print the parsed data
+                printf("Parsed Wind Sample: Direction=%.1f%c, Speed=%.1f%c, Status=%c\n",
+                       sample.direction, sample.reference,
+                       sample.speed, sample.speed_unit,
+                       sample.status);
+            }
         }
 
         index = 0;

@@ -56,6 +56,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Src/L3/angle_sensors.c
     User/Src/L3/command_dispatch.c
     User/Src/L3/windvane.c
+    User/Src/L2/conversions.c
 )
 
 # Add include paths
