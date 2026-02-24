@@ -1,6 +1,7 @@
 #include "conversions.h"
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 
 /* -------------------------------------------------------------------------
  * StringToFloat
@@ -10,132 +11,63 @@ float Conversions_StringToFloat(const char *str)
     if (str == NULL || *str == '\0')
         return 0.0f;
 
-    float result = 0.0f;
-    float decimal_divisor = 1.0f;
-    bool negative = false;
-    bool in_decimal = false;
-
-    if (*str == '-')
-    {
-        negative = true;
+    char *tmpSign = (str[0] == '-') ? "-" : "";
+    if (str[0] == '-' || str[0] == '+')
         str++;
-    }
-    else if (*str == '+')
+
+    int tmpInt1 = 0;
+    while (*str && *str != '.')
     {
+        tmpInt1 = tmpInt1 * 10 + (*str - '0');
         str++;
     }
 
-    while (*str)
+    int tmpInt2 = 0;
+    int decimal_digits = 0;
+    if (*str == '.')
     {
-        if (*str == '.')
+        str++; // skip the dot
+        while (*str && decimal_digits < 4)
         {
-            if (in_decimal) break; // second dot — stop parsing
-            in_decimal = true;
+            tmpInt2 = tmpInt2 * 10 + (*str - '0');
+            decimal_digits++;
+            str++;
         }
-        else if (*str >= '0' && *str <= '9')
-        {
-            uint8_t digit = *str - '0';
-
-            if (!in_decimal)
-            {
-                result = result * 10.0f + digit;
-            }
-            else
-            {
-                decimal_divisor *= 10.0f;
-                result += (float)digit / decimal_divisor;
-            }
-        }
-        else
-        {
-            break; // non-numeric character — stop parsing
-        }
-
-        str++;
     }
 
-    return negative ? -result : result;
+    // Pad tmpInt2 to 4 decimal places
+    while (decimal_digits < 4)
+    {
+        tmpInt2 *= 10;
+        decimal_digits++;
+    }
+
+    float result = (float)tmpInt1 + ((float)tmpInt2 / 10000.0f);
+
+    return (tmpSign[0] == '-') ? -result : result;
 }
 
 /* -------------------------------------------------------------------------
  * FloatToString
  * ------------------------------------------------------------------------- */
 
-// Helper: write an integer into a buffer, returns number of characters written
-static uint8_t write_integer(uint32_t value, char *buf, uint8_t buf_size)
+
+void Conversions_FloatToString(float value, char *buf)
 {
-    if (buf_size == 0) return 0;
+    char *tmpSign = (value < 0) ? "-" : "";
+    float tmpVal  = (value < 0) ? -value : value;
 
-    char tmp[12];
-    uint8_t len = 0;
+    int tmpInt1   = (int)tmpVal;
+    float tmpFrac = tmpVal - tmpInt1;
+    int tmpInt2   = (int)(tmpFrac * 10000 + 0.5f);
 
-    if (value == 0)
+    // Handle carry e.g. 0.99999 rounding up to 10000
+    if (tmpInt2 >= 10000)
     {
-        tmp[len++] = '0';
-    }
-    else
-    {
-        while (value > 0 && len < sizeof(tmp))
-        {
-            tmp[len++] = '0' + (value % 10);
-            value /= 10;
-        }
+        tmpInt1++;
+        tmpInt2 -= 10000;
     }
 
-    // tmp is in reverse order
-    if (len > buf_size) return 0;
-
-    for (uint8_t i = 0; i < len; i++)
-        buf[i] = tmp[len - 1 - i];
-
-    return len;
-}
-
-bool Conversions_FloatToString(float value, char *buf, uint8_t buf_size, uint8_t decimal_places)
-{
-    if (buf == NULL || buf_size == 0)
-        return false;
-
-    uint8_t pos = 0;
-
-    // Handle negative
-    if (value < 0.0f)
-    {
-        if (pos >= buf_size - 1) return false;
-        buf[pos++] = '-';
-        value = -value;
-    }
-
-    // Round value to the requested decimal places
-    float rounding = 0.5f;
-    for (uint8_t i = 0; i < decimal_places; i++)
-        rounding /= 10.0f;
-    value += rounding;
-
-    // Integer part
-    uint32_t int_part = (uint32_t)value;
-    uint8_t written = write_integer(int_part, buf + pos, buf_size - pos - 1);
-    if (written == 0 && int_part != 0) return false;
-    pos += written;
-
-    // Decimal part
-    if (decimal_places > 0)
-    {
-        if (pos >= buf_size - 1) return false;
-        buf[pos++] = '.';
-
-        float decimal = value - (float)int_part;
-
-        for (uint8_t i = 0; i < decimal_places; i++)
-        {
-            decimal *= 10.0f;
-            uint8_t digit = (uint8_t)decimal;
-            if (pos >= buf_size - 1) return false;
-            buf[pos++] = '0' + digit;
-            decimal -= digit;
-        }
-    }
-
-    buf[pos] = '\0';
-    return true;
+    // Write into buffer, padding fractional part to 4 digits to preserve leading zeros
+    sprintf(buf, "%s%d.%04d", tmpSign, tmpInt1, tmpInt2);
 }

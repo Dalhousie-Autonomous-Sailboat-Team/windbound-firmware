@@ -19,13 +19,7 @@ float Conversions_StringToFloat(const char *str);
  * Writes result into a caller-provided buffer.
  * Does not use sprintf/printf.
  *
- * @param value         Float value to convert
- * @param buf           Output buffer
- * @param buf_size      Size of output buffer
- * @param decimal_places Number of digits after the decimal point
- * @return true         If conversion succeeded
- * @return false        If buffer is NULL or too small
  */
-bool Conversions_FloatToString(float value, char *buf, uint8_t buf_size, uint8_t decimal_places);
+void Conversions_FloatToString(float value, char *buf);
 
 #endif /* CONVERSIONS_H */ /*** end of file ***/

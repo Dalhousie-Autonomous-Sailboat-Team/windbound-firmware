@@ -21,6 +21,7 @@
 #include "user_uart.h"
 #include "L3/command_dispatch.h"
 #include "L3/windvane.h"
+#include "L2/conversions.h"
 
 extern osMessageQueueId_t uart_rx_queueHandle;
 extern osMessageQueueId_t debug_command_queueHandle;
@@ -59,6 +60,48 @@ static void WindVaneBuf_Push(WindSample_t *sample)
 static bool WindVane_Parse_NMEA_Sentence(const char *sentence, WindSample_t *sample)
 {
   
+    /* --- Parse fields --- */
+    char buf[64];
+    strncpy(buf, sentence, sizeof(buf) - 1);
+    buf[sizeof(buf) - 1] = '\0';
+
+    char *saveptr;
+    char *token;
+
+    // Field 0: "$IIMWV" — skip
+    token = strtok_r(buf, ",", &saveptr);
+    if (token == NULL || strncmp(token, "$IIMWV", 6) != 0)
+        return false;
+
+    // Field 1: Wind direction
+    token = strtok_r(NULL, ",", &saveptr);
+    if (token == NULL || *token == '\0') return false;
+    sample->direction = Conversions_StringToFloat(token);
+
+    // Field 2: Reference
+    token = strtok_r(NULL, ",", &saveptr);
+    if (token == NULL || *token == '\0') return false;
+    sample->reference = token[0];
+
+    // Field 3: Wind speed
+    token = strtok_r(NULL, ",", &saveptr);
+    if (token == NULL || *token == '\0') return false;
+    sample->speed = Conversions_StringToFloat(token);
+
+    // Field 4: Speed unit
+    token = strtok_r(NULL, ",", &saveptr);
+    if (token == NULL || *token == '\0') return false;
+    sample->speed_unit = token[0];
+
+    // Field 5: Status
+    token = strtok_r(NULL, "*", &saveptr);
+    if (token == NULL || *token == '\0') return false;
+    sample->status = token[0];
+
+    /* --- Timestamp --- */
+    //sample->timestamp = xTaskGetTickCount();
+
+    return true;
 }
 
 
@@ -210,10 +253,14 @@ static void ProcessWindvaneData(uint8_t data)
             {
                 //WindVaneBuf_Push(&sample);
                 // For now, just print the parsed data
-                printf("Parsed Wind Sample: Direction=%.1f%c, Speed=%.1f%c, Status=%c\n",
-                       sample.direction, sample.reference,
-                       sample.speed, sample.speed_unit,
-                       sample.status);
+                // printf("Parsed Wind Sample: Direction=%.1f%c, Speed=%.1f%c, Status=%c\n",
+                //        sample.direction, sample.reference,
+                //        sample.speed, sample.speed_unit,
+                //        sample.status);
+                //Debug_Print_String("Something parsed from windvane\r\n");
+
+
+
             }
         }
 
@@ -230,16 +277,18 @@ void UARTParserTask(void *argument)
         osMessageQueueGet(uart_rx_queueHandle, &uart_char, NULL, osWaitForever);
         switch (uart_char.port)
         {
-        case UART_PORT_4:
+        case UART_PORT_4: // data from PC debug
             /* Handle data from UART4 */
             ProcessDebugData(uart_char.data);
             break;
 
-        case UART_PORT_3:
+        case UART_PORT_3: // data from windvane 
             /* Future implementation for UART3 */
             ProcessWindvaneData(uart_char.data);
             break;
-
+        
+        case UART_PORT_1: // data from GPS (not used yet)
+        
         default:
             continue;
         }
