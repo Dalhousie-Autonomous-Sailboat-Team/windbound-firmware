@@ -20,6 +20,8 @@
 /* User Includes */
 #include "user_uart.h"
 #include "L3/command_dispatch.h"
+#include "L3/windvane.h"
+#include "L2/conversions.h"
 
 extern osMessageQueueId_t uart_rx_queueHandle;
 extern osMessageQueueId_t debug_command_queueHandle;
@@ -29,6 +31,79 @@ extern osMessageQueueId_t debug_command_queueHandle;
 #define CARRIAGE_RETURN_CHAR '\r'
 
 #define PARSE_STORAGE_LEN 32
+#define NMEA_IIMWV "$IIMWV"
+#define NMEA_IIMWV_LEN 6
+
+WindVaneCircBuf_t wind_vane_buffer = {
+    .wind_buf = {0},
+    .head = 0,
+    .tail = 0
+};
+
+static void WindVaneBuf_Push(WindSample_t *sample)
+{
+    
+    sample->timestamp = osKernelGetTickCount();
+    wind_vane_buffer.wind_buf[wind_vane_buffer.head] = *sample;
+    
+
+    wind_vane_buffer.head = (wind_vane_buffer.head + 1) % WIND_BUF_SIZE;
+
+    /* Overwrite oldest if full */
+    if (wind_vane_buffer.head == wind_vane_buffer.tail)
+    {
+        wind_vane_buffer.tail = (wind_vane_buffer.tail + 1) % WIND_BUF_SIZE;
+    }
+}
+
+
+static bool WindVane_Parse_NMEA_Sentence(const char *sentence, WindSample_t *sample)
+{
+  
+    /* --- Parse fields --- */
+    char buf[64];
+    strncpy(buf, sentence, sizeof(buf) - 1);
+    buf[sizeof(buf) - 1] = '\0';
+
+    char *saveptr;
+    char *token;
+
+    // Field 0: "$IIMWV" — skip
+    token = strtok_r(buf, ",", &saveptr);
+    if (token == NULL || strncmp(token, "$IIMWV", 6) != 0)
+        return false;
+
+    // Field 1: Wind direction
+    token = strtok_r(NULL, ",", &saveptr);
+    if (token == NULL || *token == '\0') return false;
+    sample->direction = Conversions_StringToFloat(token);
+
+    // Field 2: Reference
+    token = strtok_r(NULL, ",", &saveptr);
+    if (token == NULL || *token == '\0') return false;
+    sample->reference = token[0];
+
+    // Field 3: Wind speed
+    token = strtok_r(NULL, ",", &saveptr);
+    if (token == NULL || *token == '\0') return false;
+    sample->speed = Conversions_StringToFloat(token);
+
+    // Field 4: Speed unit
+    token = strtok_r(NULL, ",", &saveptr);
+    if (token == NULL || *token == '\0') return false;
+    sample->speed_unit = token[0];
+
+    // Field 5: Status
+    token = strtok_r(NULL, "*", &saveptr);
+    if (token == NULL || *token == '\0') return false;
+    sample->status = token[0];
+
+    /* --- Timestamp --- */
+    //sample->timestamp = xTaskGetTickCount();
+
+    return true;
+}
+
 
 static void ProcessDebugData(uint8_t data)
 {
@@ -116,11 +191,75 @@ static void ProcessDebugData(uint8_t data)
     }
 }
 
-/**
- * @brief UART Serial Data Parser Task
- *
- * @param argument Pointer to the I2C bus number (1 or 2)
- */
+
+static void ProcessWindvaneData(uint8_t data)
+{
+    /* We only want the $IIMWV NMEA sentence from the windvane */
+
+    static char nmea_sentence[64];
+    static uint8_t index = 0;
+    static bool collecting = false;
+    static uint8_t match_index = 0;
+
+    if (data == '$')
+    {
+        index = 0;
+        match_index = 0;
+        collecting = true;
+    }
+
+    if (!collecting)
+    {
+        return;
+    }
+
+    // overflow protection
+    if (index >= sizeof(nmea_sentence) - 1)
+    {
+        collecting = false;
+        index = 0;
+        return;
+    }
+
+    nmea_sentence[index++] = data;
+
+    // check character match every ISR, else discard immediately
+    if (match_index < NMEA_IIMWV_LEN)
+    {
+        if (data == NMEA_IIMWV[match_index])
+            match_index++;
+        else
+            collecting = false;
+    }
+
+    if (data == '\n')
+    {
+        collecting = false;
+        nmea_sentence[index] = NULL_CHAR;
+
+        if (match_index == NMEA_IIMWV_LEN)
+        {
+            // We have a full $IIMWV sentence, send to windvane parser
+            WindSample_t sample;
+            if (WindVane_Parse_NMEA_Sentence(nmea_sentence, &sample))
+            {
+                //WindVaneBuf_Push(&sample);
+                // For now, just print the parsed data
+                // printf("Parsed Wind Sample: Direction=%.1f%c, Speed=%.1f%c, Status=%c\n",
+                //        sample.direction, sample.reference,
+                //        sample.speed, sample.speed_unit,
+                //        sample.status);
+                //Debug_Print_String("Something parsed from windvane\r\n");
+
+
+
+            }
+        }
+
+        index = 0;
+    }
+}
+
 void UARTParserTask(void *argument)
 {
     UART_Char_t uart_char;
@@ -130,10 +269,21 @@ void UARTParserTask(void *argument)
         osMessageQueueGet(uart_rx_queueHandle, &uart_char, NULL, osWaitForever);
         switch (uart_char.port)
         {
-        case UART_PORT_4:
+        case UART_PORT_4: // data from PC debug
             /* Handle data from UART4 */
             ProcessDebugData(uart_char.data);
             break;
+
+        case UART_PORT_3: // data from windvane 
+            /* Future implementation for UART3 */
+            ProcessWindvaneData(uart_char.data);
+            break;
+        
+        case UART_PORT_8: // data from radio
+            /* Future implementation for UART8 */
+            //ProcessRadioData(uart_char.data); 
+             break;
+        
         default:
             continue;
         }

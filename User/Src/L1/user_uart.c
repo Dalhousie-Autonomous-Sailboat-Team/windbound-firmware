@@ -57,8 +57,10 @@ UART_HandleTypeDef *uart_handle_lookup[] = {
  */
 void User_UART_Init(void)
 {
-    /* Start Interrupt Character Reception for UART1 */
+    /* Start Interrupt Character Reception for all UART ports */
     HAL_UART_Receive_IT(&huart4, &uart4_rx_byte, 1);
+    HAL_UART_Receive_IT(&huart3, &uart3_rx_byte, 1);
+    HAL_UART_Receive_IT(&huart8, &uart8_rx_byte, 1);
 }
 
 /**
@@ -103,7 +105,7 @@ void Debug_Print_String(const char *string)
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    if (huart == &huart4)
+    if (huart == &huart4) // character from PC debug
     {
         UART_Char_t uart_char;
         uart_char.port = UART_PORT_4;
@@ -112,8 +114,33 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         /* Restart Interrupt Character Reception for UART4 */
         HAL_UART_Receive_IT(huart, &uart4_rx_byte, 1);
         /* Echo byte back to host */
-        HAL_UART_Transmit(huart, &uart4_rx_byte, 1, 0);
+       // HAL_UART_Transmit(huart, &uart4_rx_byte, 1, 0);
     }
+    else if (huart == &huart3) // character from windvane
+    {
+        UART_Char_t uart_char;
+        uart_char.port = UART_PORT_3;
+        uart_char.data = uart3_rx_byte;
+        osMessageQueuePut(uart_rx_queueHandle, &uart_char, 0, 0);
+        /* Restart Interrupt Character Reception for UART3 */
+        HAL_UART_Receive_IT(huart, &uart3_rx_byte, 1);
+        //HAL_UART_Transmit(huart, &uart3_rx_byte, 1, 0);
+
+    }
+
+    else if (huart == &huart8) // character radio 
+    {
+        UART_Char_t uart_char;
+        uart_char.port = UART_PORT_8;
+        uart_char.data = uart8_rx_byte;
+        osMessageQueuePut(uart_rx_queueHandle, &uart_char, 0, 0);
+        /* Restart Interrupt Character Reception for UART8 */
+        HAL_UART_Receive_IT(huart, &uart8_rx_byte, 1);
+    }
+
+    else
+    {
+    };
 }
 
 /**

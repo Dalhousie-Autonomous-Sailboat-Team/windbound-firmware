@@ -1,0 +1,73 @@
+#include "conversions.h"
+#include <stddef.h>
+#include <string.h>
+#include <stdio.h>
+
+/* -------------------------------------------------------------------------
+ * StringToFloat
+ * ------------------------------------------------------------------------- */
+float Conversions_StringToFloat(const char *str)
+{
+    if (str == NULL || *str == '\0')
+        return 0.0f;
+
+    char *tmpSign = (str[0] == '-') ? "-" : "";
+    if (str[0] == '-' || str[0] == '+')
+        str++;
+
+    int tmpInt1 = 0;
+    while (*str && *str != '.')
+    {
+        tmpInt1 = tmpInt1 * 10 + (*str - '0');
+        str++;
+    }
+
+    int tmpInt2 = 0;
+    int decimal_digits = 0;
+    if (*str == '.')
+    {
+        str++; // skip the dot
+        while (*str && decimal_digits < 4)
+        {
+            tmpInt2 = tmpInt2 * 10 + (*str - '0');
+            decimal_digits++;
+            str++;
+        }
+    }
+
+    // Pad tmpInt2 to 4 decimal places
+    while (decimal_digits < 4)
+    {
+        tmpInt2 *= 10;
+        decimal_digits++;
+    }
+
+    float result = (float)tmpInt1 + ((float)tmpInt2 / 10000.0f);
+
+    return (tmpSign[0] == '-') ? -result : result;
+}
+
+/* -------------------------------------------------------------------------
+ * FloatToString
+ * ------------------------------------------------------------------------- */
+
+
+void Conversions_FloatToString(float value, char *buf)
+{
+    char *tmpSign = (value < 0) ? "-" : "";
+    float tmpVal  = (value < 0) ? -value : value;
+
+    int tmpInt1   = (int)tmpVal;
+    float tmpFrac = tmpVal - tmpInt1;
+    int tmpInt2   = (int)(tmpFrac * 10000 + 0.5f);
+
+    // Handle carry e.g. 0.99999 rounding up to 10000
+    if (tmpInt2 >= 10000)
+    {
+        tmpInt1++;
+        tmpInt2 -= 10000;
+    }
+
+    // Write into buffer, padding fractional part to 4 digits to preserve leading zeros
+    sprintf(buf, "%s%d.%04d", tmpSign, tmpInt1, tmpInt2);
+}
