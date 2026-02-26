@@ -105,9 +105,6 @@ static bool WindVane_Parse_NMEA_Sentence(const char *sentence, WindSample_t *sam
 }
 
 
-
-
-
 static void ProcessDebugData(uint8_t data)
 {
     static uint8_t index = 0;            /* Index for received data */
@@ -194,11 +191,6 @@ static void ProcessDebugData(uint8_t data)
     }
 }
 
-/**
- * @brief UART Serial Data Parser Task
- *
- * @param argument Pointer to the I2C bus number (1 or 2)
- */
 
 static void ProcessWindvaneData(uint8_t data)
 {
@@ -287,7 +279,10 @@ void UARTParserTask(void *argument)
             ProcessWindvaneData(uart_char.data);
             break;
         
-        case UART_PORT_1: // data from GPS (not used yet)
+        case UART_PORT_8: // data from radio
+            /* Future implementation for UART8 */
+            //ProcessRadioData(uart_char.data); 
+             break;
         
         default:
             continue;
