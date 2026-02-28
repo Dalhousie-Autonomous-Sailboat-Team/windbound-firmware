@@ -249,7 +249,7 @@ static void ProcessWindvaneData(uint8_t data)
                 //        sample.direction, sample.reference,
                 //        sample.speed, sample.speed_unit,
                 //        sample.status);
-                //Debug_Print_String("Something parsed from windvane\r\n");
+                Debug_Print_String("Something parsed from windvane\r\n");
 
 
 

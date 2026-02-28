@@ -88,22 +88,10 @@ const osThreadAttr_t heartbeatTask_attributes = {
   .priority = (osPriority_t) osPriorityBelowNormal,
   .stack_size = 128 * 4
 };
-/* Definitions for telemetryTask */
-osThreadId_t telemetryTaskHandle;
-const osThreadAttr_t telemetryTask_attributes = {
-  .name = "telemetryTask",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
 /* Definitions for debugPrintStringMutex */
 osMutexId_t debugPrintStringMutexHandle;
 const osMutexAttr_t debugPrintStringMutex_attributes = {
   .name = "debugPrintStringMutex"
-};
-/* Definitions for sailEncoderMutex */
-osMutexId_t sailEncoderMutexHandle;
-const osMutexAttr_t sailEncoderMutex_attributes = {
-  .name = "sailEncoderMutex"
 };
 /* Definitions for i2c1_queue */
 osMessageQueueId_t i2c1_queueHandle;
@@ -124,11 +112,6 @@ const osMessageQueueAttr_t mast_angle_queue_attributes = {
 osMessageQueueId_t uart_rx_queueHandle;
 const osMessageQueueAttr_t uart_rx_queue_attributes = {
   .name = "uart_rx_queue"
-};
-/* Definitions for wind_queue */
-osMessageQueueId_t wind_queueHandle;
-const osMessageQueueAttr_t wind_queue_attributes = {
-  .name = "wind_queue"
 };
 /* Definitions for mastAngleReadComplete */
 osSemaphoreId_t mastAngleReadCompleteHandle;
@@ -185,9 +168,6 @@ void MX_FREERTOS_Init(void) {
   /* creation of debugPrintStringMutex */
   debugPrintStringMutexHandle = osMutexNew(&debugPrintStringMutex_attributes);
 
-  /* creation of sailEncoderMutex */
-  sailEncoderMutexHandle = osMutexNew(&sailEncoderMutex_attributes);
-
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
@@ -209,8 +189,6 @@ void MX_FREERTOS_Init(void) {
   mast_angle_queueHandle = osMessageQueueNew (1, sizeof(uint16_t), &mast_angle_queue_attributes);
   /* creation of uart_rx_queue */
   uart_rx_queueHandle = osMessageQueueNew (32, sizeof(UART_Char_t), &uart_rx_queue_attributes);
-  /* creation of wind_queue */
-  wind_queueHandle = osMessageQueueNew (8, sizeof(WindSample_t), &wind_queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -232,9 +210,6 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of heartbeatTask */
   heartbeatTaskHandle = osThreadNew(HeartbeatTask, NULL, &heartbeatTask_attributes);
-
-  /* creation of telemetryTask */
-  telemetryTaskHandle = osThreadNew(TelemetryTask, NULL, &telemetryTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

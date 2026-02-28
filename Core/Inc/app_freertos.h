@@ -60,14 +60,11 @@ extern osThreadId_t i2c2TaskHandle;
 extern osThreadId_t mastAngleTaskHandle;
 extern osThreadId_t uartParserTaskHandle;
 extern osThreadId_t heartbeatTaskHandle;
-extern osThreadId_t telemetryTaskHandle;
 extern osMutexId_t debugPrintStringMutexHandle;
-extern osMutexId_t sailEncoderMutexHandle;
 extern osMessageQueueId_t i2c1_queueHandle;
 extern osMessageQueueId_t i2c2_queueHandle;
 extern osMessageQueueId_t mast_angle_queueHandle;
 extern osMessageQueueId_t uart_rx_queueHandle;
-extern osMessageQueueId_t wind_queueHandle;
 extern osSemaphoreId_t mastAngleReadCompleteHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
@@ -81,7 +78,6 @@ extern void I2CManagerTask(void *argument);
 extern void MastAngleTask(void *argument);
 extern void UARTParserTask(void *argument);
 extern void HeartbeatTask(void *argument);
-extern void TelemetryTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
