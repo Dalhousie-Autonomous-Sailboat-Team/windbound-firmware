@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "user_i2c.h"
 #include "user_uart.h"
+#include "L2/app_types.h"
 
 /* USER CODE END Includes */
 
@@ -113,6 +114,11 @@ osMessageQueueId_t uart_rx_queueHandle;
 const osMessageQueueAttr_t uart_rx_queue_attributes = {
   .name = "uart_rx_queue"
 };
+/* Definitions for motor_command_queue */
+osMessageQueueId_t motor_command_queueHandle;
+const osMessageQueueAttr_t motor_command_queue_attributes = {
+  .name = "motor_command_queue"
+};
 /* Definitions for mastAngleReadComplete */
 osSemaphoreId_t mastAngleReadCompleteHandle;
 const osSemaphoreAttr_t mastAngleReadComplete_attributes = {
@@ -189,6 +195,8 @@ void MX_FREERTOS_Init(void) {
   mast_angle_queueHandle = osMessageQueueNew (1, sizeof(uint16_t), &mast_angle_queue_attributes);
   /* creation of uart_rx_queue */
   uart_rx_queueHandle = osMessageQueueNew (32, sizeof(UART_Char_t), &uart_rx_queue_attributes);
+  /* creation of motor_command_queue */
+  motor_command_queueHandle = osMessageQueueNew (8, sizeof(MotorCommand_t), &motor_command_queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */

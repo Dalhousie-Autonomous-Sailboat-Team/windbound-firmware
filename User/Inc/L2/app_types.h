@@ -1,11 +1,15 @@
-#ifndef WINDVANE_H
-#define WINDVANE_H
+#ifndef APP_TYPES_H
+#define APP_TYPES_H
 
 #include <stdint.h>
 #include <stdbool.h>
 
-#define WIND_BUF_SIZE 8
 
+#include <stdint.h>
+#include <stdbool.h>
+
+
+// Struct to store $IIMWV NMEA sentence data
 typedef struct
 {
     float direction; // in degrees
@@ -18,13 +22,13 @@ typedef struct
 
 } WindSample_t;
 
+
+// Struct to store data from Xbee 
 typedef struct
 {
-    WindSample_t wind_buf[WIND_BUF_SIZE];
-    volatile uint8_t head;
-    volatile int8_t tail;
-} WindVaneCircBuf_t;
+    float sail_angle;
+    float rud_angle;
+} MotorCommand_t;
 
-extern WindVaneCircBuf_t wind_vane_buffer;
 
-#endif /* WINDVANE_H */ /*** end of file ***/
+#endif /* APP_TYPES_H */ /*** end of file ***/

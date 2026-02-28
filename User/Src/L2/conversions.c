@@ -18,24 +18,26 @@ float Conversions_StringToFloat(const char *str)
     int tmpInt1 = 0;
     while (*str && *str != '.')
     {
+        if (*str < '0' || *str > '9') break;
         tmpInt1 = tmpInt1 * 10 + (*str - '0');
         str++;
     }
 
-    int tmpInt2 = 0;
+    int tmpInt2        = 0;
     int decimal_digits = 0;
     if (*str == '.')
     {
-        str++; // skip the dot
+        str++;
         while (*str && decimal_digits < 4)
         {
+            if (*str < '0' || *str > '9') break;
             tmpInt2 = tmpInt2 * 10 + (*str - '0');
             decimal_digits++;
             str++;
         }
     }
 
-    // Pad tmpInt2 to 4 decimal places
+    // Pad tmpInt2 to 4 decimal places to match FloatToString
     while (decimal_digits < 4)
     {
         tmpInt2 *= 10;
@@ -50,7 +52,6 @@ float Conversions_StringToFloat(const char *str)
 /* -------------------------------------------------------------------------
  * FloatToString
  * ------------------------------------------------------------------------- */
-
 
 void Conversions_FloatToString(float value, char *buf)
 {
