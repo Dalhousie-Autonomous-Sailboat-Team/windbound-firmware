@@ -55,18 +55,11 @@ extern "C" {
 
 /* USER CODE END EM */
 extern osThreadId_t initTaskHandle;
-extern osThreadId_t i2c1TaskHandle;
-extern osThreadId_t i2c2TaskHandle;
-extern osThreadId_t mastAngleTaskHandle;
 extern osThreadId_t uartParserTaskHandle;
 extern osThreadId_t heartbeatTaskHandle;
 extern osMutexId_t debugPrintStringMutexHandle;
-extern osMessageQueueId_t i2c1_queueHandle;
-extern osMessageQueueId_t i2c2_queueHandle;
-extern osMessageQueueId_t mast_angle_queueHandle;
 extern osMessageQueueId_t uart_rx_queueHandle;
 extern osMessageQueueId_t motor_command_queueHandle;
-extern osSemaphoreId_t mastAngleReadCompleteHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -74,9 +67,6 @@ extern osSemaphoreId_t mastAngleReadCompleteHandle;
 /* USER CODE END FunctionPrototypes */
 
 extern void InitTask(void *argument);
-extern void I2CManagerTask(void *argument);
-extern void I2CManagerTask(void *argument);
-extern void MastAngleTask(void *argument);
 extern void UARTParserTask(void *argument);
 extern void HeartbeatTask(void *argument);
 

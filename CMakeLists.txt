@@ -53,9 +53,9 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Src/L1/user_uart.c
     User/Src/L1/pwm.c
     User/Src/L2/serial_parser.c
-    User/Src/L3/angle_sensors.c
     User/Src/L3/command_dispatch.c
     User/Src/L2/conversions.c
+    User/Src/L2/encoder.c
 )
 
 # Add include paths
@@ -67,6 +67,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     User/Inc/L2
     User/Inc/L3
     User/Inc/L4
+
 )
 
 # Add project symbols (macros)

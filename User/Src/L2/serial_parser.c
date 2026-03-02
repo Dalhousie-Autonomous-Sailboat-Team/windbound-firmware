@@ -129,6 +129,7 @@ static bool XBee_Parse_JSON(const char *packet, MotorCommand_t *cmd)
 
     return true;
 }
+
 static void ProcessDebugData(uint8_t data)
 {
     static uint8_t index = 0;            /* Index for received data */
@@ -325,6 +326,7 @@ static void ProcessXbeeData(uint8_t data)
 }
 
 void UARTParserTask(void *argument)
+
 {
     UART_Char_t uart_char;
     User_UART_Init();

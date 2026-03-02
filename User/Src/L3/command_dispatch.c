@@ -22,9 +22,9 @@
 #include "user_main.h"
 #include "L1/user_uart.h"
 #include "L1/pwm.h"
-#include "L3/angle_sensors.h"
 
-static Command_Status_t Get_Angle_Handler(Command_Message_t *command_message);
+
+//static Command_Status_t Get_Angle_Handler(Command_Message_t *command_message);
 static Command_Status_t Set_PWM_Handler(Command_Message_t *command_message);
 
 extern osMessageQueueId_t debug_command_queueHandle;
@@ -38,7 +38,7 @@ typedef struct COMMAND_ENTRY
 
 /* Command Table */
 Command_Entry_t Command_Table[] = {
-    {"get_angle", Get_Angle_Handler},
+    //{"get_angle", Get_Angle_Handler},
     {"set_pwm", Set_PWM_Handler}, /* Placeholder for future PWM command handler */
 };
 
@@ -65,28 +65,28 @@ Command_Status_t Dispatch_Command(Command_Message_t *command_message)
     return COMMAND_STATUS_UNKNOWN_COMMAND;
 }
 
-static Command_Status_t Get_Angle_Handler(Command_Message_t *command_message)
-{
-    char response[64];
-    if (command_message->arg_count != 1)
-    {
-        Debug_Print_String("Invalid arg count\n");
-        return COMMAND_STATUS_INVALID_ARGUMENT;
-    }
-    if (strcmp(command_message->arguments[0], "mast") == 0)
-    {
-        uint16_t angle = Get_Mast_Angle();
-        snprintf(response, sizeof(response), "MAST_ANGLE:%u\n", angle);
-        Debug_Print_String(response);
-    }
-    else
-    {
-        snprintf(response, sizeof(response), "Unknown argument >%s<\n", command_message->arguments[0]);
-        Debug_Print_String(response);
-        return COMMAND_STATUS_INVALID_ARGUMENT;
-    }
-    return COMMAND_STATUS_SUCCESS;
-}
+// static Command_Status_t Get_Angle_Handler(Command_Message_t *command_message)
+// {
+//     char response[64];
+//     if (command_message->arg_count != 1)
+//     {
+//         Debug_Print_String("Invalid arg count\n");
+//         return COMMAND_STATUS_INVALID_ARGUMENT;
+//     }
+//     if (strcmp(command_message->arguments[0], "mast") == 0)
+//     {
+//         uint16_t angle = Get_Mast_Angle();
+//         snprintf(response, sizeof(response), "MAST_ANGLE:%u\n", angle);
+//         Debug_Print_String(response);
+//     }
+//     else
+//     {
+//         snprintf(response, sizeof(response), "Unknown argument >%s<\n", command_message->arguments[0]);
+//         Debug_Print_String(response);
+//         return COMMAND_STATUS_INVALID_ARGUMENT;
+//     }
+//     return COMMAND_STATUS_SUCCESS;
+// }
 
 static Command_Status_t Set_PWM_Handler(Command_Message_t *command_message)
 {
