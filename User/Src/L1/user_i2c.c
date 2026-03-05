@@ -1,9 +1,12 @@
 #include "user_i2c.h"
 #include "stm32h5xx_hal.h"
+#include "app_freertos.h"
+
+
 
 extern I2C_HandleTypeDef hi2c2;
 
-osSemaphoreId_t i2c2_semaphore;
+extern osSemaphoreId_t i2c2_semaphoreHandle;
 
 /* -------------------------------------------------------------------------
  * UserI2C_Init
@@ -11,7 +14,7 @@ osSemaphoreId_t i2c2_semaphore;
 void UserI2C_Init(void)
 {
     /* Create binary semaphore, initially taken (0 tokens) */
-    i2c2_semaphore = osSemaphoreNew(1, 0, NULL);
+    i2c2_semaphoreHandle = osSemaphoreNew(1, 0, NULL);
 }
 
 /* -------------------------------------------------------------------------
@@ -25,7 +28,7 @@ bool UserI2C_Write(uint16_t address, uint8_t *data, uint16_t length, uint32_t ti
         return false;
 
     /* Sleep until interrupt fires and gives the semaphore */
-    if (osSemaphoreAcquire(i2c2_semaphore, timeout) != osOK)
+    if (osSemaphoreAcquire(i2c2_semaphoreHandle, timeout) != osOK)
         return false;
 
     return true;
@@ -42,7 +45,7 @@ bool UserI2C_Read(uint16_t address, uint8_t *buffer, uint16_t length, uint32_t t
         return false;
 
     /* Sleep until interrupt fires and gives the semaphore */
-    if (osSemaphoreAcquire(i2c2_semaphore, timeout) != osOK)
+    if (osSemaphoreAcquire(i2c2_semaphoreHandle, timeout) != osOK)
         return false;
 
     return true;
@@ -54,17 +57,17 @@ bool UserI2C_Read(uint16_t address, uint8_t *buffer, uint16_t length, uint32_t t
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
     if (hi2c == &hi2c2)
-        osSemaphoreRelease(i2c2_semaphore);
+        osSemaphoreRelease(i2c2_semaphoreHandle);
 }
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
     if (hi2c == &hi2c2)
-        osSemaphoreRelease(i2c2_semaphore);
+        osSemaphoreRelease(i2c2_semaphoreHandle);
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
 {
     if (hi2c == &hi2c2)
-        osSemaphoreRelease(i2c2_semaphore);
+        osSemaphoreRelease(i2c2_semaphoreHandle);
 }

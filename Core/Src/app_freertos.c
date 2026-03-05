@@ -68,10 +68,22 @@ const osThreadAttr_t heartbeatTask_attributes = {
   .priority = (osPriority_t) osPriorityBelowNormal,
   .stack_size = 128 * 4
 };
+/* Definitions for encoderTask */
+osThreadId_t encoderTaskHandle;
+const osThreadAttr_t encoderTask_attributes = {
+  .name = "encoderTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
 /* Definitions for debugPrintStringMutex */
 osMutexId_t debugPrintStringMutexHandle;
 const osMutexAttr_t debugPrintStringMutex_attributes = {
   .name = "debugPrintStringMutex"
+};
+/* Definitions for encoderMutex */
+osMutexId_t encoderMutexHandle;
+const osMutexAttr_t encoderMutex_attributes = {
+  .name = "encoderMutex"
 };
 /* Definitions for uart_rx_queue */
 osMessageQueueId_t uart_rx_queueHandle;
@@ -82,6 +94,11 @@ const osMessageQueueAttr_t uart_rx_queue_attributes = {
 osMessageQueueId_t motor_command_queueHandle;
 const osMessageQueueAttr_t motor_command_queue_attributes = {
   .name = "motor_command_queue"
+};
+/* Definitions for i2c2_semaphore */
+osSemaphoreId_t i2c2_semaphoreHandle;
+const osSemaphoreAttr_t i2c2_semaphore_attributes = {
+  .name = "i2c2_semaphore"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -133,9 +150,14 @@ void MX_FREERTOS_Init(void) {
   /* creation of debugPrintStringMutex */
   debugPrintStringMutexHandle = osMutexNew(&debugPrintStringMutex_attributes);
 
+  /* creation of encoderMutex */
+  encoderMutexHandle = osMutexNew(&encoderMutex_attributes);
+
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
+  /* creation of i2c2_semaphore */
+  i2c2_semaphoreHandle = osSemaphoreNew(1, 1, &i2c2_semaphore_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -160,6 +182,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of heartbeatTask */
   heartbeatTaskHandle = osThreadNew(HeartbeatTask, NULL, &heartbeatTask_attributes);
+
+  /* creation of encoderTask */
+  encoderTaskHandle = osThreadNew(EncoderTask, NULL, &encoderTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

@@ -57,9 +57,12 @@ extern "C" {
 extern osThreadId_t initTaskHandle;
 extern osThreadId_t uartParserTaskHandle;
 extern osThreadId_t heartbeatTaskHandle;
+extern osThreadId_t encoderTaskHandle;
 extern osMutexId_t debugPrintStringMutexHandle;
+extern osMutexId_t encoderMutexHandle;
 extern osMessageQueueId_t uart_rx_queueHandle;
 extern osMessageQueueId_t motor_command_queueHandle;
+extern osSemaphoreId_t i2c2_semaphoreHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -69,6 +72,7 @@ extern osMessageQueueId_t motor_command_queueHandle;
 extern void InitTask(void *argument);
 extern void UARTParserTask(void *argument);
 extern void HeartbeatTask(void *argument);
+extern void EncoderTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
