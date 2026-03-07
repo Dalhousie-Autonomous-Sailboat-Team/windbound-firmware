@@ -61,6 +61,7 @@ void User_UART_Init(void)
     HAL_UART_Receive_IT(&huart4, &uart4_rx_byte, 1);
     HAL_UART_Receive_IT(&huart3, &uart3_rx_byte, 1);
     HAL_UART_Receive_IT(&huart8, &uart8_rx_byte, 1);
+    //HAL_UART_Receive_IT(&huart1, &uart1_rx_byte, 1);
 }
 
 /**
@@ -98,6 +99,8 @@ void Debug_Print_String(const char *string)
     Print_String_Local(string, DEBUG_PORT);
     osMutexRelease(debugPrintStringMutexHandle);
 }
+
+
 
 /**
  * @brief Receive Complete Callback

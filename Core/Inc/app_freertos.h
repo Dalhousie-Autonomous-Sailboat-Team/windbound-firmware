@@ -63,6 +63,8 @@ extern osMutexId_t encoderMutexHandle;
 extern osMessageQueueId_t uart_rx_queueHandle;
 extern osMessageQueueId_t motor_command_queueHandle;
 extern osSemaphoreId_t i2c2_semaphoreHandle;
+extern osSemaphoreId_t radio_tx_semaphoreHandle;
+extern osSemaphoreId_t raspberry_tx_semaphoreHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */

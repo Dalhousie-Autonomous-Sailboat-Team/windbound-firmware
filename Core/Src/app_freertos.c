@@ -100,6 +100,16 @@ osSemaphoreId_t i2c2_semaphoreHandle;
 const osSemaphoreAttr_t i2c2_semaphore_attributes = {
   .name = "i2c2_semaphore"
 };
+/* Definitions for radio_tx_semaphore */
+osSemaphoreId_t radio_tx_semaphoreHandle;
+const osSemaphoreAttr_t radio_tx_semaphore_attributes = {
+  .name = "radio_tx_semaphore"
+};
+/* Definitions for raspberry_tx_semaphore */
+osSemaphoreId_t raspberry_tx_semaphoreHandle;
+const osSemaphoreAttr_t raspberry_tx_semaphore_attributes = {
+  .name = "raspberry_tx_semaphore"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -158,6 +168,12 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_MUTEX */
   /* creation of i2c2_semaphore */
   i2c2_semaphoreHandle = osSemaphoreNew(1, 1, &i2c2_semaphore_attributes);
+
+  /* creation of radio_tx_semaphore */
+  radio_tx_semaphoreHandle = osSemaphoreNew(1, 1, &radio_tx_semaphore_attributes);
+
+  /* creation of raspberry_tx_semaphore */
+  raspberry_tx_semaphoreHandle = osSemaphoreNew(1, 1, &raspberry_tx_semaphore_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
