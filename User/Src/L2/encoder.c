@@ -1,5 +1,6 @@
 #include "L2/encoder.h"
 #include "L1/user_i2c.h"
+#include "L1/user_uart.h"
 
 /* AS5600 constants */
 #define AS5600_I2C_ADDRESS      (0x36 << 1)
@@ -14,7 +15,7 @@
 #define TCA9548A_DISABLE_ALL    0x00           
 #define ENCODER_MUX_CHANNEL     4              
 #define MUX_TIMEOUT_MS          10
-#define ENCODER_TASK_DELAY_MS   10             
+#define ENCODER_TASK_DELAY_MS   100         
 
 
 extern osMutexId_t encoderMutexHandle;
@@ -86,7 +87,7 @@ bool Encoder_GetLatest(EncoderSample_t *out)
 
 void EncoderTask(void *argument)
 {
-    (void)argument;
+    //(void)argument;
 
     EncoderSample_t sample;
     sample.channel = ENCODER_MUX_CHANNEL;
@@ -96,21 +97,20 @@ void EncoderTask(void *argument)
         /* open up channel 4 on MUX */
         if (!Encoder_SelectMuxChannel(ENCODER_MUX_CHANNEL))
         {
-            osDelay(ENCODER_TASK_DELAY_MS);
             continue;
         }
+
+        
 
         /* read data from AS5600 on channel 4*/
         if (!AS5600_ReadAngle(&sample.angle))
         {
-            osDelay(ENCODER_TASK_DELAY_MS);
             continue;
         }
 
+
         /* update struct via Mutex */
         Encoder_UpdateLatest(&sample);
-
-        
 
         osDelay(ENCODER_TASK_DELAY_MS);
     }

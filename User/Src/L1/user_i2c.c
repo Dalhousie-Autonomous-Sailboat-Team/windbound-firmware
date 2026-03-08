@@ -9,15 +9,6 @@ extern I2C_HandleTypeDef hi2c2;
 extern osSemaphoreId_t i2c2_semaphoreHandle;
 
 /* -------------------------------------------------------------------------
- * UserI2C_Init
- * ------------------------------------------------------------------------- */
-void UserI2C_Init(void)
-{
-    /* Create binary semaphore, initially taken (0 tokens) */
-    i2c2_semaphoreHandle = osSemaphoreNew(1, 0, NULL);
-}
-
-/* -------------------------------------------------------------------------
  * UserI2C_Write
  * ------------------------------------------------------------------------- */
 bool UserI2C_Write(uint16_t address, uint8_t *data, uint16_t length, uint32_t timeout)

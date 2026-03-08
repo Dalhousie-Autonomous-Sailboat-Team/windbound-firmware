@@ -167,7 +167,9 @@ void MX_FREERTOS_Init(void) {
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
   /* creation of i2c2_semaphore */
-  i2c2_semaphoreHandle = osSemaphoreNew(1, 1, &i2c2_semaphore_attributes);
+  // NOTE: CubeMX bug - generates (1,1), must be (1,0) for depleted initial state
+  // Do not regenerate without checking this line.
+  i2c2_semaphoreHandle = osSemaphoreNew(1, 0, &i2c2_semaphore_attributes);
 
   /* creation of radio_tx_semaphore */
   radio_tx_semaphoreHandle = osSemaphoreNew(1, 1, &radio_tx_semaphore_attributes);
