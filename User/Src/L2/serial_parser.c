@@ -103,8 +103,11 @@ static const char *JSON_FindValue(const char *packet, const char *key)
     return pos;
 }
 
+// Function to parse JSON packet that looks like {sa:45.0,ra:90.0}\r\n
+
 static bool XBee_Parse_JSON(const char *packet, MotorCommand_t *cmd)
 {
+
     if (packet == NULL || cmd == NULL)
         return false;
 
@@ -140,6 +143,7 @@ static void ProcessDebugData(uint8_t data)
 
     switch (data)
     {
+    
     case BACKSPACE_CHAR:
         if (index > 0)
         {
@@ -147,13 +151,14 @@ static void ProcessDebugData(uint8_t data)
             parse_storage[index] = NULL_CHAR;
         }
         break;
-
+    
     case ' ':
+
         if (index == 0)
         {
             break; /* Ignore repeated spaces */
         }
-
+        
         parse_storage[index] = NULL_CHAR;
 
         if (argument_counter == 0)
@@ -174,7 +179,7 @@ static void ProcessDebugData(uint8_t data)
         argument_counter++;
         index = 0;
         break;
-
+    
     case CARRIAGE_RETURN_CHAR:
         parse_storage[index] = NULL_CHAR;
 
@@ -204,7 +209,7 @@ static void ProcessDebugData(uint8_t data)
         argument_counter = 0;
         index = 0;
         break;
-
+    
     default:
         if (index < (PARSE_STORAGE_LEN - 1))
         {
@@ -214,6 +219,7 @@ static void ProcessDebugData(uint8_t data)
 
         break;
     }
+
 }
 
 static void ProcessWindvaneData(uint8_t data)

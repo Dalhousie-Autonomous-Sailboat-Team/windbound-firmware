@@ -22,10 +22,12 @@
 #include "user_main.h"
 #include "L1/user_uart.h"
 #include "L1/pwm.h"
+#include "L2/encoder.h"
 
-
-//static Command_Status_t Get_Angle_Handler(Command_Message_t *command_message);
+// static Command_Status_t Get_Angle_Handler(Command_Message_t *command_message);
 static Command_Status_t Set_PWM_Handler(Command_Message_t *command_message);
+static Command_Status_t Set_Pos_Handler(Command_Message_t *command_message);
+static Command_Status_t Get_Angle_Handler(Command_Message_t *command_message);
 
 extern osMessageQueueId_t debug_command_queueHandle;
 
@@ -38,8 +40,9 @@ typedef struct COMMAND_ENTRY
 
 /* Command Table */
 Command_Entry_t Command_Table[] = {
-    //{"get_angle", Get_Angle_Handler},
-    {"set_pwm", Set_PWM_Handler}, /* Placeholder for future PWM command handler */
+    {"get_angle", Get_Angle_Handler}, // read from any of 4 encoders 
+    {"set_pwm", Set_PWM_Handler}, // set motor PWM - open loop
+    {"set_pos", Set_Pos_Handler}  // set motor position - closed loop
 };
 
 #define COMMAND_TABLE_SIZE (sizeof(Command_Table) / sizeof(Command_Entry_t))
@@ -65,28 +68,29 @@ Command_Status_t Dispatch_Command(Command_Message_t *command_message)
     return COMMAND_STATUS_UNKNOWN_COMMAND;
 }
 
-// static Command_Status_t Get_Angle_Handler(Command_Message_t *command_message)
-// {
-//     char response[64];
-//     if (command_message->arg_count != 1)
-//     {
-//         Debug_Print_String("Invalid arg count\n");
-//         return COMMAND_STATUS_INVALID_ARGUMENT;
-//     }
-//     if (strcmp(command_message->arguments[0], "mast") == 0)
-//     {
-//         uint16_t angle = Get_Mast_Angle();
-//         snprintf(response, sizeof(response), "MAST_ANGLE:%u\n", angle);
-//         Debug_Print_String(response);
-//     }
-//     else
-//     {
-//         snprintf(response, sizeof(response), "Unknown argument >%s<\n", command_message->arguments[0]);
-//         Debug_Print_String(response);
-//         return COMMAND_STATUS_INVALID_ARGUMENT;
-//     }
-//     return COMMAND_STATUS_SUCCESS;
-// }
+static Command_Status_t Get_Angle_Handler(Command_Message_t *command_message)
+{
+    char response[64];
+    if (command_message->arg_count != 1)
+    {
+        Debug_Print_String("Invalid arg count\n");
+        return COMMAND_STATUS_INVALID_ARGUMENT;
+    }
+    if (strcmp(command_message->arguments[0], "mast") == 0)
+    {
+        EncoderSample_t sample;
+        Encoder_GetLatest(&sample);
+        snprintf(response, sizeof(response), "MAST_ANGLE:%u\n", (uint16_t)sample.angle);
+        Debug_Print_String(response);
+    }
+    else
+    {
+        snprintf(response, sizeof(response), "Unknown argument >%s<\n", command_message->arguments[0]);
+        Debug_Print_String(response);
+        return COMMAND_STATUS_INVALID_ARGUMENT;
+    }
+    return COMMAND_STATUS_SUCCESS;
+}
 
 static Command_Status_t Set_PWM_Handler(Command_Message_t *command_message)
 {
@@ -148,5 +152,11 @@ static Command_Status_t Set_PWM_Handler(Command_Message_t *command_message)
     }
 
     PWM_SetDutyCycle(channel, value);
+    return COMMAND_STATUS_SUCCESS;
+}
+
+static Command_Status_t Set_Pos_Handler(Command_Message_t *command_message)
+{
+    // Placeholder for future closed-loop position control command handler
     return COMMAND_STATUS_SUCCESS;
 }

@@ -100,14 +100,11 @@ void EncoderTask(void *argument)
             continue;
         }
 
-        
-
         /* read data from AS5600 on channel 4*/
         if (!AS5600_ReadAngle(&sample.angle))
         {
             continue;
         }
-
 
         /* update struct via Mutex */
         Encoder_UpdateLatest(&sample);
