@@ -26,10 +26,8 @@
 
 // static Command_Status_t Get_Angle_Handler(Command_Message_t *command_message);
 static Command_Status_t Set_PWM_Handler(Command_Message_t *command_message);
-static Command_Status_t Set_Pos_Handler(Command_Message_t *command_message);
+static Command_Status_t Set_Angle_Handler(Command_Message_t *command_message);
 static Command_Status_t Get_Angle_Handler(Command_Message_t *command_message);
-
-extern osMessageQueueId_t debug_command_queueHandle;
 
 /* Command Entry Structure */
 typedef struct COMMAND_ENTRY
@@ -40,9 +38,9 @@ typedef struct COMMAND_ENTRY
 
 /* Command Table */
 Command_Entry_t Command_Table[] = {
-    {"get_angle", Get_Angle_Handler}, // read from any of 4 encoders 
-    {"set_pwm", Set_PWM_Handler}, // set motor PWM - open loop
-    {"set_pos", Set_Pos_Handler}  // set motor position - closed loop
+    {"get_angle", Get_Angle_Handler}, // read from any of 4 encoders
+    {"set_pwm", Set_PWM_Handler},     // set motor PWM - open loop
+    {"set_angle", Set_Angle_Handler}      // set motor position - closed loop
 };
 
 #define COMMAND_TABLE_SIZE (sizeof(Command_Table) / sizeof(Command_Entry_t))
@@ -155,7 +153,7 @@ static Command_Status_t Set_PWM_Handler(Command_Message_t *command_message)
     return COMMAND_STATUS_SUCCESS;
 }
 
-static Command_Status_t Set_Pos_Handler(Command_Message_t *command_message)
+static Command_Status_t Set_Angle_Handler(Command_Message_t *command_message)
 {
     // Placeholder for future closed-loop position control command handler
     return COMMAND_STATUS_SUCCESS;

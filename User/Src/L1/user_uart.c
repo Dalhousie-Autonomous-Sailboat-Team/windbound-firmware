@@ -111,7 +111,7 @@ bool RPi_Print_String(const char *string)
     if (len == 0)
         return false;
 
-    // block to acquire semaphore
+    // acquire semaphore 
     osSemaphoreAcquire(raspberry_tx_semaphoreHandle, osWaitForever);
     // send
     HAL_StatusTypeDef status = HAL_UART_Transmit_IT(&huart7, (uint8_t *)string, len);
@@ -137,7 +137,7 @@ bool Radio_Print_String(const char *string)
     if (len == 0)
         return false;
 
-    /* block to acquire semaphore */
+    /* acquire semaphore */
     osSemaphoreAcquire(radio_tx_semaphoreHandle, osWaitForever);
     // send
     HAL_StatusTypeDef status = HAL_UART_Transmit_IT(&huart8, (uint8_t *)string, len);

@@ -623,6 +623,7 @@ rtos.0.mutexes.0=allocationType,Dynamic;controlBlockName,NULL;name,debugPrintStr
 rtos.0.mutexes.1=allocationType,Dynamic;controlBlockName,NULL;name,encoderMutex
 rtos.0.queues.0=allocationType,Dynamic;bufferName,NULL;controlBlockName,NULL;itemNumber,32;itemSize,UART_Char_t;name,uart_rx_queue
 rtos.0.queues.1=allocationType,Dynamic;bufferName,NULL;controlBlockName,NULL;itemNumber,8;itemSize,MotorCommand_t;name,motor_command_queue
+rtos.0.queues.2=allocationType,Dynamic;bufferName,NULL;controlBlockName,NULL;itemNumber,4;itemSize,WindSample_t;name,wind_queue
 rtos.0.tasks.0=allocationType,Dynamic;bufferName,NULL;codeGen,As external;controlBlockName,NULL;entry,InitTask;name,initTask;parameter,NULL;priority,osPriorityHigh;stackSize,128
 rtos.0.tasks.1=allocationType,Dynamic;bufferName,NULL;codeGen,As external;controlBlockName,NULL;entry,UARTParserTask;name,uartParserTask;parameter,NULL;priority,osPriorityNormal;stackSize,256
 rtos.0.tasks.2=allocationType,Dynamic;bufferName,NULL;codeGen,As external;controlBlockName,NULL;entry,HeartbeatTask;name,heartbeatTask;parameter,NULL;priority,osPriorityBelowNormal;stackSize,128

@@ -24,8 +24,8 @@
 #include "L2/conversions.h"
 
 extern osMessageQueueId_t uart_rx_queueHandle;
-extern osMessageQueueId_t debug_command_queueHandle;
 extern osMessageQueueId_t motor_command_queueHandle;
+extern osMessageQueueId_t wind_queueHandle;
 
 #define BACKSPACE_CHAR '\177'
 #define NULL_CHAR '\0'
@@ -143,7 +143,7 @@ static void ProcessDebugData(uint8_t data)
 
     switch (data)
     {
-    
+
     case BACKSPACE_CHAR:
         if (index > 0)
         {
@@ -151,14 +151,14 @@ static void ProcessDebugData(uint8_t data)
             parse_storage[index] = NULL_CHAR;
         }
         break;
-    
+
     case ' ':
 
         if (index == 0)
         {
             break; /* Ignore repeated spaces */
         }
-        
+
         parse_storage[index] = NULL_CHAR;
 
         if (argument_counter == 0)
@@ -179,7 +179,7 @@ static void ProcessDebugData(uint8_t data)
         argument_counter++;
         index = 0;
         break;
-    
+
     case CARRIAGE_RETURN_CHAR:
         parse_storage[index] = NULL_CHAR;
 
@@ -209,7 +209,7 @@ static void ProcessDebugData(uint8_t data)
         argument_counter = 0;
         index = 0;
         break;
-    
+
     default:
         if (index < (PARSE_STORAGE_LEN - 1))
         {
@@ -219,7 +219,6 @@ static void ProcessDebugData(uint8_t data)
 
         break;
     }
-
 }
 
 static void ProcessWindvaneData(uint8_t data)
@@ -279,7 +278,8 @@ static void ProcessWindvaneData(uint8_t data)
                 //         sample.direction, sample.reference,
                 //         sample.speed, sample.speed_unit,
                 //         sample.status);
-                Debug_Print_String("Something parsed from windvane\r\n");
+                // Debug_Print_String("Something parsed from windvane\r\n");
+                osMessageQueuePut(wind_queueHandle, &sample, 0, 0);
             }
         }
 
