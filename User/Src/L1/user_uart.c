@@ -60,10 +60,16 @@ UART_HandleTypeDef *uart_handle_lookup[] = {
 void User_UART_Init(void)
 {
     /* Start Interrupt Character Reception for all UART ports */
+
+    // for PC debug
     HAL_UART_Receive_IT(&huart4, &uart4_rx_byte, 1);
+    // for windvane
     HAL_UART_Receive_IT(&huart3, &uart3_rx_byte, 1);
+    // for radio
     HAL_UART_Receive_IT(&huart8, &uart8_rx_byte, 1);
-    // HAL_UART_Receive_IT(&huart1, &uart1_rx_byte, 1);
+    // for Rpi
+    HAL_UART_Receive_IT(&huart7, &uart7_rx_byte, 1); 
+   
 }
 
 /**
@@ -160,36 +166,42 @@ bool Radio_Print_String(const char *string)
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    if (huart == &huart4) // character from PC debug
+    if (huart == &huart4) 
     {
         UART_Char_t uart_char;
         uart_char.port = UART_PORT_4;
         uart_char.data = uart4_rx_byte;
         osMessageQueuePut(uart_rx_queueHandle, &uart_char, 0, 0);
-        /* Restart Interrupt Character Reception for UART4 */
         HAL_UART_Receive_IT(huart, &uart4_rx_byte, 1);
         /* Echo byte back to host */
-        // HAL_UART_Transmit(huart, &uart4_rx_byte, 1, 0);
+        HAL_UART_Transmit(huart, &uart4_rx_byte, 1, 0);
     }
-    else if (huart == &huart3) // character from windvane
+    else if (huart == &huart3) 
     {
         UART_Char_t uart_char;
         uart_char.port = UART_PORT_3;
         uart_char.data = uart3_rx_byte;
         osMessageQueuePut(uart_rx_queueHandle, &uart_char, 0, 0);
-        /* Restart Interrupt Character Reception for UART3 */
         HAL_UART_Receive_IT(huart, &uart3_rx_byte, 1);
-        // HAL_UART_Transmit(huart, &uart3_rx_byte, 1, 0);
+        
     }
 
-    else if (huart == &huart8) // character radio
+    else if (huart == &huart8) 
     {
         UART_Char_t uart_char;
         uart_char.port = UART_PORT_8;
         uart_char.data = uart8_rx_byte;
         osMessageQueuePut(uart_rx_queueHandle, &uart_char, 0, 0);
-        /* Restart Interrupt Character Reception for UART8 */
         HAL_UART_Receive_IT(huart, &uart8_rx_byte, 1);
+    }
+
+    else if (huart == &huart7) 
+    {
+        UART_Char_t uart_char;
+        uart_char.port = UART_PORT_7;
+        uart_char.data = uart7_rx_byte;
+        osMessageQueuePut(uart_rx_queueHandle, &uart_char, 0, 0);
+        HAL_UART_Receive_IT(huart, &uart7_rx_byte, 1);
     }
 
     else

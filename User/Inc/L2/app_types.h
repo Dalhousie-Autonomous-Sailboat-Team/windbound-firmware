@@ -22,14 +22,12 @@ typedef struct
 
 } WindSample_t;
 
-
 // Struct to store data from Xbee 
 typedef struct
 {
     float sail_angle;
     float rud_angle;
 } MotorCommand_t;
-
 
 typedef struct
 {
@@ -49,6 +47,5 @@ typedef struct
     float roll;
     float yaw;
 } RPiSample_t;
-
 
 #endif /* APP_TYPES_H */ /*** end of file ***/

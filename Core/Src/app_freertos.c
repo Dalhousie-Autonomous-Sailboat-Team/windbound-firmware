@@ -25,6 +25,7 @@
 #include "user_i2c.h"
 #include "user_uart.h"
 #include "L2/app_types.h"
+#include "L3/telemetry.h"
 
 /* USER CODE END Includes */
 
@@ -70,7 +71,13 @@ osThreadId_t encoderTaskHandle;
 const osThreadAttr_t encoderTask_attributes = {
     .name = "encoderTask",
     .priority = (osPriority_t)osPriorityNormal,
-    .stack_size = 128 * 4};
+    .stack_size = 256 * 4};
+/* Definitions for telemetryTask */
+osThreadId_t telemetryTaskHandle;
+const osThreadAttr_t telemetryTask_attributes = {
+    .name = "telemetryTask",
+    .priority = (osPriority_t)osPriorityNormal,
+    .stack_size = 256 * 4};
 /* Definitions for debugPrintStringMutex */
 osMutexId_t debugPrintStringMutexHandle;
 const osMutexAttr_t debugPrintStringMutex_attributes = {
@@ -91,6 +98,10 @@ const osMessageQueueAttr_t motor_command_queue_attributes = {
 osMessageQueueId_t wind_queueHandle;
 const osMessageQueueAttr_t wind_queue_attributes = {
     .name = "wind_queue"};
+/* Definitions for rpi_queue */
+osMessageQueueId_t rpi_queueHandle;
+const osMessageQueueAttr_t rpi_queue_attributes = {
+    .name = "rpi_queue"};
 /* Definitions for i2c2_semaphore */
 osSemaphoreId_t i2c2_semaphoreHandle;
 const osSemaphoreAttr_t i2c2_semaphore_attributes = {
@@ -182,6 +193,8 @@ void MX_FREERTOS_Init(void)
   motor_command_queueHandle = osMessageQueueNew(8, sizeof(MotorCommand_t), &motor_command_queue_attributes);
   /* creation of wind_queue */
   wind_queueHandle = osMessageQueueNew(4, sizeof(WindSample_t), &wind_queue_attributes);
+  /* creation of rpi_queue */
+  rpi_queueHandle = osMessageQueueNew(4, sizeof(RPiSample_t), &rpi_queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -197,6 +210,9 @@ void MX_FREERTOS_Init(void)
 
   /* creation of encoderTask */
   encoderTaskHandle = osThreadNew(EncoderTask, NULL, &encoderTask_attributes);
+
+  /* creation of telemetryTask */
+  telemetryTaskHandle = osThreadNew(TelemetryTask, NULL, &telemetryTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

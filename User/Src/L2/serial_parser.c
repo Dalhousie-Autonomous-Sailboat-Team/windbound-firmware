@@ -26,6 +26,7 @@
 extern osMessageQueueId_t uart_rx_queueHandle;
 extern osMessageQueueId_t motor_command_queueHandle;
 extern osMessageQueueId_t wind_queueHandle;
+extern osMessageQueueId_t rpi_queueHandle;
 
 #define BACKSPACE_CHAR '\177'
 #define NULL_CHAR '\0'
@@ -103,10 +104,9 @@ static const char *JSON_FindValue(const char *packet, const char *key)
     return pos;
 }
 
-// Function to parse JSON packet that looks like {sa:45.0,ra:90.0}\r\n
-
 static bool XBee_Parse_JSON(const char *packet, MotorCommand_t *cmd)
 {
+    // Function to parse received JSON packet that looks like {sa:45.0,ra:90.0}\r\n
 
     if (packet == NULL || cmd == NULL)
         return false;
@@ -129,6 +129,73 @@ static bool XBee_Parse_JSON(const char *packet, MotorCommand_t *cmd)
     if (ra_val == NULL)
         return false;
     cmd->rud_angle = Conversions_StringToFloat(ra_val);
+
+    return true;
+}
+
+static bool RPi_Parse_JSON(const char *packet, RPiSample_t *rpi)
+{
+    if (packet == NULL || rpi == NULL)
+        return false;
+    if (packet[0] != '{')
+        return false;
+    if (strchr(packet, '}') == NULL)
+        return false;
+
+    const char *val;
+
+    /* Targets */
+    val = JSON_FindValue(packet, "tb:");
+    if (val == NULL)
+        return false;
+    rpi->target_bearing = Conversions_StringToFloat(val);
+
+    val = JSON_FindValue(packet, "wlat:");
+    if (val == NULL)
+        return false;
+    rpi->waypoint_lat = Conversions_StringToFloat(val);
+
+    val = JSON_FindValue(packet, "wlon:");
+    if (val == NULL)
+        return false;
+    rpi->waypoint_lon = Conversions_StringToFloat(val);
+
+    val = JSON_FindValue(packet, "tsa:");
+    if (val == NULL)
+        return false;
+    rpi->target_sail_angle = Conversions_StringToFloat(val);
+
+    val = JSON_FindValue(packet, "tra:");
+    if (val == NULL)
+        return false;
+    rpi->target_rudder_angle = Conversions_StringToFloat(val);
+
+    /* GPS */
+    val = JSON_FindValue(packet, "clat:");
+    if (val == NULL)
+        return false;
+    rpi->current_lat = Conversions_StringToFloat(val);
+
+    val = JSON_FindValue(packet, "clon:");
+    if (val == NULL)
+        return false;
+    rpi->current_lon = Conversions_StringToFloat(val);
+
+    /* IMU */
+    val = JSON_FindValue(packet, "pitch:");
+    if (val == NULL)
+        return false;
+    rpi->pitch = Conversions_StringToFloat(val);
+
+    val = JSON_FindValue(packet, "roll:");
+    if (val == NULL)
+        return false;
+    rpi->roll = Conversions_StringToFloat(val);
+
+    val = JSON_FindValue(packet, "yaw:");
+    if (val == NULL)
+        return false;
+    rpi->yaw = Conversions_StringToFloat(val);
 
     return true;
 }
@@ -331,6 +398,45 @@ static void ProcessXbeeData(uint8_t data)
     }
 }
 
+static void ProcessRaspberryData(uint8_t data)
+{
+
+    static char rpi_packet[128];
+    static uint8_t index = 0;
+    static bool collecting = false;
+
+    if (data == '{')
+    {
+        index = 0;
+        collecting = true;
+    }
+
+    if (!collecting)
+        return;
+
+    if (index >= sizeof(rpi_packet) - 1)
+    {
+        collecting = false;
+        index = 0;
+        return;
+    }
+
+    rpi_packet[index++] = data;
+
+    if (data == '\n')
+    {
+        collecting = false;
+        rpi_packet[index] = '\0';
+        index = 0;
+
+        RPiSample_t RPi_sample;
+        if (RPi_Parse_JSON(rpi_packet, &RPi_sample))
+        {
+            // osMessageQueuePut(nav_queueHandle, &nav, 0, osNoWait);
+        }
+    }
+}
+
 void UARTParserTask(void *argument)
 
 {
@@ -339,22 +445,23 @@ void UARTParserTask(void *argument)
     while (true)
     {
         osMessageQueueGet(uart_rx_queueHandle, &uart_char, NULL, osWaitForever);
+
         switch (uart_char.port)
         {
         case UART_PORT_4: // data from PC debug
-            /* Handle data from UART4 */
             ProcessDebugData(uart_char.data);
             break;
 
         case UART_PORT_3: // data from windvane
-            /* Future implementation for UART3 */
             ProcessWindvaneData(uart_char.data);
             break;
 
         case UART_PORT_8: // data from radio
-            /* Future implementation for UART8 */
-            // ProcessRadioData(uart_char.data);
             ProcessXbeeData(uart_char.data);
+            break;
+
+        case UART_PORT_7: // data from Raspberry Pi
+            ProcessRaspberryData(uart_char.data);
             break;
 
         default:
