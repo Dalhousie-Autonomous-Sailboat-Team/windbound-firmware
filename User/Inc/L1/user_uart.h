@@ -30,6 +30,9 @@ typedef struct
 void User_UART_Init(void);
 void Debug_Print_String(const char *string);
 
+bool Radio_Print_String(const char *string);
+bool RPi_Print_String(const char *string);
+
 #endif /* USER_UART_H */
 
 /*** end of file ***/
