@@ -15,7 +15,7 @@
 #define TCA9548A_DISABLE_ALL    0x00           
 #define ENCODER_MUX_CHANNEL     4              
 #define MUX_TIMEOUT_MS          10
-#define ENCODER_TASK_DELAY_MS   100         
+#define ENCODER_TASK_DELAY_MS   1000     
 
 
 extern osMutexId_t encoderMutexHandle;
@@ -108,7 +108,7 @@ void EncoderTask(void *argument)
 
         /* update struct via Mutex */
         Encoder_UpdateLatest(&sample);
-
+    
         osDelay(ENCODER_TASK_DELAY_MS);
     }
 }

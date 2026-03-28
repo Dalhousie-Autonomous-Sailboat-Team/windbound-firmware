@@ -57,6 +57,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Src/L2/conversions.c
     User/Src/L2/encoder.c
     User/Src/L3/telemetry.c
+    User/Src/L2/pid.c
 )
 
 # Add include paths

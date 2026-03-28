@@ -17,8 +17,8 @@
 #define SERVO_PWM_FREQUENCY_HZ 50U
 #define MOTOR_PWM_FREQUENCY_HZ 20000U
 
-extern TIM_HandleTypeDef htim1;
-extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim1; //
+extern TIM_HandleTypeDef htim2; //
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim5;
 osMessageQueueId_t PWM_Queue;
@@ -52,28 +52,33 @@ void PWM_Init(void)
      */
 
     /* Initialize servo PWM duty cycle to 1500 */
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 1500);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 0);
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 
     /* Initialize Motor PWM duty cycles to 0 */
+
+    // J9 CONNECTOR ON PCB
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
+
+    // J10 CONNECTOR - ON PCB
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
+
     __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_1, 0);
     __HAL_TIM_SET_COMPARE(&htim5, TIM_CHANNEL_3, 0);
 
-    /* Start Motor PWM generation on all channels */
+    /* Start Motor PWM generation on tim 2 */
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-#ifdef USE_FLAP_MOTOR
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-#endif
-#ifdef USE_MOTOR_CHANNEL_4
-    HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_3);
-#endif
+// #ifdef USE_FLAP_MOTOR
+//     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+//     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+// #endif
+// #ifdef USE_MOTOR_CHANNEL_4
+//     HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_1);
+//     HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_3);
+// #endif
 }
 
 /**

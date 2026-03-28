@@ -22,12 +22,12 @@
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
-extern UART_HandleTypeDef huart3;
-extern UART_HandleTypeDef huart4;
+extern UART_HandleTypeDef huart3; // for windvane
+extern UART_HandleTypeDef huart4; // for PC debug
 extern UART_HandleTypeDef huart5;
 extern UART_HandleTypeDef huart6;
-extern UART_HandleTypeDef huart7;
-extern UART_HandleTypeDef huart8;
+extern UART_HandleTypeDef huart7; // for Rpi
+extern UART_HandleTypeDef huart8; // for radio
 
 extern osMessageQueueId_t uart_rx_queueHandle;
 extern osMutexId_t debugPrintStringMutexHandle;
@@ -61,13 +61,9 @@ void User_UART_Init(void)
 {
     /* Start Interrupt Character Reception for all UART ports */
 
-    // for PC debug
     HAL_UART_Receive_IT(&huart4, &uart4_rx_byte, 1);
-    // for windvane
     HAL_UART_Receive_IT(&huart3, &uart3_rx_byte, 1);
-    // for radio
     HAL_UART_Receive_IT(&huart8, &uart8_rx_byte, 1);
-    // for Rpi
     HAL_UART_Receive_IT(&huart7, &uart7_rx_byte, 1); 
    
 }

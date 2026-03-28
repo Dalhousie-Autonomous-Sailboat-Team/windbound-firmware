@@ -347,6 +347,7 @@ static void ProcessWindvaneData(uint8_t data)
                 //         sample.status);
                 // Debug_Print_String("Something parsed from windvane\r\n");
                 osMessageQueuePut(wind_queueHandle, &sample, 0, 0);
+                Debug_Print_String("Windvane data parsed and queued\r\n");
             }
         }
 
