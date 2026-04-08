@@ -55,20 +55,8 @@ float Conversions_StringToFloat(const char *str)
 
 void Conversions_FloatToString(float value, char *buf)
 {
-    char *tmpSign = (value < 0) ? "-" : "";
-    float tmpVal  = (value < 0) ? -value : value;
 
-    int tmpInt1   = (int)tmpVal;
-    float tmpFrac = tmpVal - tmpInt1;
-    int tmpInt2   = (int)(tmpFrac * 10000 + 0.5f);
-
-    // Handle carry e.g. 0.99999 rounding up to 10000
-    if (tmpInt2 >= 10000)
-    {
-        tmpInt1++;
-        tmpInt2 -= 10000;
-    }
-
-    // Write into buffer, padding fractional part to 4 digits to preserve leading zeros
-    sprintf(buf, "%s%d.%04d", tmpSign, tmpInt1, tmpInt2);
+    int rounded = (int)(value < 0 ? value - 0.5f : value + 0.5f);
+    sprintf(buf, "%d", rounded);
+    
 }

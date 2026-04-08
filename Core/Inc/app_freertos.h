@@ -59,6 +59,7 @@ extern osThreadId_t uartParserTaskHandle;
 extern osThreadId_t heartbeatTaskHandle;
 extern osThreadId_t encoderTaskHandle;
 extern osThreadId_t telemetryTaskHandle;
+extern osThreadId_t rpiTransmitTaskHandle;
 extern osMutexId_t debugPrintStringMutexHandle;
 extern osMutexId_t encoderMutexHandle;
 extern osMessageQueueId_t uart_rx_queueHandle;
@@ -79,6 +80,7 @@ extern void UARTParserTask(void *argument);
 extern void HeartbeatTask(void *argument);
 extern void EncoderTask(void *argument);
 extern void TelemetryTask(void *argument);
+extern void RpiTransmitTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 

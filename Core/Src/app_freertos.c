@@ -26,6 +26,7 @@
 #include "user_uart.h"
 #include "L2/app_types.h"
 #include "L3/telemetry.h"
+#include "L3/rpi.h"
 
 /* USER CODE END Includes */
 
@@ -51,69 +52,90 @@
 /* Definitions for initTask */
 osThreadId_t initTaskHandle;
 const osThreadAttr_t initTask_attributes = {
-    .name = "initTask",
-    .priority = (osPriority_t)osPriorityHigh,
-    .stack_size = 128 * 4};
+  .name = "initTask",
+  .priority = (osPriority_t) osPriorityHigh,
+  .stack_size = 128 * 4
+};
 /* Definitions for uartParserTask */
 osThreadId_t uartParserTaskHandle;
 const osThreadAttr_t uartParserTask_attributes = {
-    .name = "uartParserTask",
-    .priority = (osPriority_t)osPriorityNormal,
-    .stack_size = 256 * 4};
+  .name = "uartParserTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 256 * 4
+};
 /* Definitions for heartbeatTask */
 osThreadId_t heartbeatTaskHandle;
 const osThreadAttr_t heartbeatTask_attributes = {
-    .name = "heartbeatTask",
-    .priority = (osPriority_t)osPriorityBelowNormal,
-    .stack_size = 128 * 4};
+  .name = "heartbeatTask",
+  .priority = (osPriority_t) osPriorityBelowNormal,
+  .stack_size = 128 * 4
+};
 /* Definitions for encoderTask */
 osThreadId_t encoderTaskHandle;
 const osThreadAttr_t encoderTask_attributes = {
-    .name = "encoderTask",
-    .priority = (osPriority_t)osPriorityNormal,
-    .stack_size = 256 * 4};
+  .name = "encoderTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 256 * 4
+};
 /* Definitions for telemetryTask */
 osThreadId_t telemetryTaskHandle;
 const osThreadAttr_t telemetryTask_attributes = {
-    .name = "telemetryTask",
-    .priority = (osPriority_t)osPriorityNormal,
-    .stack_size = 256 * 4};
+  .name = "telemetryTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 256 * 4
+};
+/* Definitions for rpiTransmitTask */
+osThreadId_t rpiTransmitTaskHandle;
+const osThreadAttr_t rpiTransmitTask_attributes = {
+  .name = "rpiTransmitTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
 /* Definitions for debugPrintStringMutex */
 osMutexId_t debugPrintStringMutexHandle;
 const osMutexAttr_t debugPrintStringMutex_attributes = {
-    .name = "debugPrintStringMutex"};
+  .name = "debugPrintStringMutex"
+};
 /* Definitions for encoderMutex */
 osMutexId_t encoderMutexHandle;
 const osMutexAttr_t encoderMutex_attributes = {
-    .name = "encoderMutex"};
+  .name = "encoderMutex"
+};
 /* Definitions for uart_rx_queue */
 osMessageQueueId_t uart_rx_queueHandle;
 const osMessageQueueAttr_t uart_rx_queue_attributes = {
-    .name = "uart_rx_queue"};
+  .name = "uart_rx_queue"
+};
 /* Definitions for motor_command_queue */
 osMessageQueueId_t motor_command_queueHandle;
 const osMessageQueueAttr_t motor_command_queue_attributes = {
-    .name = "motor_command_queue"};
+  .name = "motor_command_queue"
+};
 /* Definitions for wind_queue */
 osMessageQueueId_t wind_queueHandle;
 const osMessageQueueAttr_t wind_queue_attributes = {
-    .name = "wind_queue"};
+  .name = "wind_queue"
+};
 /* Definitions for rpi_queue */
 osMessageQueueId_t rpi_queueHandle;
 const osMessageQueueAttr_t rpi_queue_attributes = {
-    .name = "rpi_queue"};
+  .name = "rpi_queue"
+};
 /* Definitions for i2c2_semaphore */
 osSemaphoreId_t i2c2_semaphoreHandle;
 const osSemaphoreAttr_t i2c2_semaphore_attributes = {
-    .name = "i2c2_semaphore"};
+  .name = "i2c2_semaphore"
+};
 /* Definitions for radio_tx_semaphore */
 osSemaphoreId_t radio_tx_semaphoreHandle;
 const osSemaphoreAttr_t radio_tx_semaphore_attributes = {
-    .name = "radio_tx_semaphore"};
+  .name = "radio_tx_semaphore"
+};
 /* Definitions for raspberry_tx_semaphore */
 osSemaphoreId_t raspberry_tx_semaphoreHandle;
 const osSemaphoreAttr_t raspberry_tx_semaphore_attributes = {
-    .name = "raspberry_tx_semaphore"};
+  .name = "raspberry_tx_semaphore"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -153,12 +175,11 @@ __weak void PostSleepProcessing(uint32_t ulExpectedIdleTime)
 /* USER CODE END PREPOSTSLEEP */
 
 /**
- * @brief  FreeRTOS initialization
- * @param  None
- * @retval None
- */
-void MX_FREERTOS_Init(void)
-{
+  * @brief  FreeRTOS initialization
+  * @param  None
+  * @retval None
+  */
+void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
@@ -188,13 +209,13 @@ void MX_FREERTOS_Init(void)
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of uart_rx_queue */
-  uart_rx_queueHandle = osMessageQueueNew(32, sizeof(UART_Char_t), &uart_rx_queue_attributes);
+  uart_rx_queueHandle = osMessageQueueNew (32, sizeof(UART_Char_t), &uart_rx_queue_attributes);
   /* creation of motor_command_queue */
-  motor_command_queueHandle = osMessageQueueNew(8, sizeof(MotorCommand_t), &motor_command_queue_attributes);
+  motor_command_queueHandle = osMessageQueueNew (8, sizeof(MotorCommand_t), &motor_command_queue_attributes);
   /* creation of wind_queue */
-  wind_queueHandle = osMessageQueueNew(4, sizeof(WindSample_t), &wind_queue_attributes);
+  wind_queueHandle = osMessageQueueNew (4, sizeof(WindSample_t), &wind_queue_attributes);
   /* creation of rpi_queue */
-  rpi_queueHandle = osMessageQueueNew(4, sizeof(RPiSample_t), &rpi_queue_attributes);
+  rpi_queueHandle = osMessageQueueNew (4, sizeof(RPiSample_t), &rpi_queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -209,10 +230,13 @@ void MX_FREERTOS_Init(void)
   heartbeatTaskHandle = osThreadNew(HeartbeatTask, NULL, &heartbeatTask_attributes);
 
   /* creation of encoderTask */
-  encoderTaskHandle = osThreadNew(EncoderTask, NULL, &encoderTask_attributes);
+  //encoderTaskHandle = osThreadNew(EncoderTask, NULL, &encoderTask_attributes);
 
   /* creation of telemetryTask */
-  telemetryTaskHandle = osThreadNew(TelemetryTask, NULL, &telemetryTask_attributes);
+  //telemetryTaskHandle = osThreadNew(TelemetryTask, NULL, &telemetryTask_attributes);
+
+  /* creation of rpiTransmitTask */
+  rpiTransmitTaskHandle = osThreadNew(RpiTransmitTask, NULL, &rpiTransmitTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -221,9 +245,11 @@ void MX_FREERTOS_Init(void)
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
+
 }
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
+

@@ -64,8 +64,7 @@ void User_UART_Init(void)
     HAL_UART_Receive_IT(&huart4, &uart4_rx_byte, 1);
     HAL_UART_Receive_IT(&huart3, &uart3_rx_byte, 1);
     HAL_UART_Receive_IT(&huart8, &uart8_rx_byte, 1);
-    HAL_UART_Receive_IT(&huart7, &uart7_rx_byte, 1); 
-   
+    HAL_UART_Receive_IT(&huart7, &uart7_rx_byte, 1);
 }
 
 /**
@@ -113,7 +112,7 @@ bool RPi_Print_String(const char *string)
     if (len == 0)
         return false;
 
-    // acquire semaphore 
+    // acquire semaphore
     osSemaphoreAcquire(raspberry_tx_semaphoreHandle, osWaitForever);
     // send
     HAL_StatusTypeDef status = HAL_UART_Transmit_IT(&huart7, (uint8_t *)string, len);
@@ -125,7 +124,7 @@ bool RPi_Print_String(const char *string)
     }
 
     // block until callback releases semaphore
-    osSemaphoreAcquire(raspberry_tx_semaphoreHandle, osWaitForever);
+    //osSemaphoreAcquire(raspberry_tx_semaphoreHandle, osWaitForever);
 
     return true;
 }
@@ -162,7 +161,7 @@ bool Radio_Print_String(const char *string)
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    if (huart == &huart4) 
+    if (huart == &huart4)
     {
         UART_Char_t uart_char;
         uart_char.port = UART_PORT_4;
@@ -172,17 +171,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         /* Echo byte back to host */
         HAL_UART_Transmit(huart, &uart4_rx_byte, 1, 0);
     }
-    else if (huart == &huart3) 
+    else if (huart == &huart3)
     {
         UART_Char_t uart_char;
         uart_char.port = UART_PORT_3;
         uart_char.data = uart3_rx_byte;
         osMessageQueuePut(uart_rx_queueHandle, &uart_char, 0, 0);
         HAL_UART_Receive_IT(huart, &uart3_rx_byte, 1);
-        
     }
 
-    else if (huart == &huart8) 
+    else if (huart == &huart8)
     {
         UART_Char_t uart_char;
         uart_char.port = UART_PORT_8;
@@ -191,7 +189,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         HAL_UART_Receive_IT(huart, &uart8_rx_byte, 1);
     }
 
-    else if (huart == &huart7) 
+    else if (huart == &huart7)
     {
         UART_Char_t uart_char;
         uart_char.port = UART_PORT_7;
