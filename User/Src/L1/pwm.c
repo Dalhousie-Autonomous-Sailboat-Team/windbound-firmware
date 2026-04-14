@@ -58,7 +58,7 @@ void PWM_Init(void)
     /* Initialize Motor PWM duty cycles to 0 */
 
     // J9 CONNECTOR ON PCB
-    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 6400);
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 3200);
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
 
     // J10 CONNECTOR - ON PCB

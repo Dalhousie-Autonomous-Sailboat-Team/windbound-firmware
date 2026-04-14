@@ -123,9 +123,6 @@ bool RPi_Print_String(const char *string)
         return false;
     }
 
-    // block until callback releases semaphore
-    //osSemaphoreAcquire(raspberry_tx_semaphoreHandle, osWaitForever);
-
     return true;
 }
 
@@ -148,9 +145,6 @@ bool Radio_Print_String(const char *string)
         osSemaphoreRelease(radio_tx_semaphoreHandle);
         return false;
     }
-
-    /* Block till callback releases semaphore */
-    osSemaphoreAcquire(radio_tx_semaphoreHandle, osWaitForever);
 
     return true;
 }

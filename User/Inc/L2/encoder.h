@@ -9,7 +9,7 @@
 typedef struct
 {
     uint8_t channel;      /* Mux channel the reading came from (4)  */
-    float   angle;        /* Degrees, 0.0 – 360.0                   */
+    uint16_t   angle;        /* Degrees, 0.0 – 360.0                   */
 } EncoderSample_t;
 
 

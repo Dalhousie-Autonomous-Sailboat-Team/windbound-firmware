@@ -1,6 +1,7 @@
 #include "L2/encoder.h"
 #include "L1/user_i2c.h"
 #include "L1/user_uart.h"
+#include <stdio.h>
 
 /* AS5600 constants */
 #define AS5600_I2C_ADDRESS      (0x36 << 1)
@@ -15,13 +16,13 @@
 #define TCA9548A_DISABLE_ALL    0x00           
 #define ENCODER_MUX_CHANNEL     4              
 #define MUX_TIMEOUT_MS          10
-#define ENCODER_TASK_DELAY_MS   1000     
+#define ENCODER_TASK_DELAY_MS   100
 
 
 extern osMutexId_t encoderMutexHandle;
 static EncoderSample_t encoder_latest; 
 
-static bool AS5600_ReadAngle(float *angle_degrees)
+static bool AS5600_ReadAngle(uint16_t *angle_degrees)
 {
     if (angle_degrees == NULL)
         return false;
@@ -40,7 +41,7 @@ static bool AS5600_ReadAngle(float *angle_degrees)
     uint16_t raw = ((uint16_t)(rx_buf[0] & 0x0F) << 8) | rx_buf[1];
 
     // convert to degrees
-    *angle_degrees = ((float)raw / AS5600_RAW_MAX) * AS5600_DEGREES_MAX;
+    *angle_degrees = ((uint16_t)raw / AS5600_RAW_MAX) * AS5600_DEGREES_MAX;
 
     return true;
 } 
@@ -88,6 +89,7 @@ bool Encoder_GetLatest(EncoderSample_t *out)
 void EncoderTask(void *argument)
 {
     //(void)argument;
+    char buf[64];
 
     EncoderSample_t sample;
     sample.channel = ENCODER_MUX_CHANNEL;
@@ -108,6 +110,11 @@ void EncoderTask(void *argument)
 
         /* update struct via Mutex */
         Encoder_UpdateLatest(&sample);
+        // snprintf(buf, sizeof(buf), "Encoder angle: %d degrees\r\n", (int)sample.angle);
+        // Debug_Print_String(buf);
+        //Debug_Print_String("Encoder angle: %d degrees\r\n", (int)sample.angle);
+    
+        //DebugPrint("Encoder angle: %.u degrees\r\n", sample.angle);
     
         osDelay(ENCODER_TASK_DELAY_MS);
     }

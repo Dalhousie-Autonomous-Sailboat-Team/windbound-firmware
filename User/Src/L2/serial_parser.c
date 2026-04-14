@@ -22,6 +22,7 @@
 #include "L3/command_dispatch.h"
 #include "L2/app_types.h"
 #include "L2/conversions.h"
+#include "L2/rpi.h"
 
 extern osMessageQueueId_t uart_rx_queueHandle;
 extern osMessageQueueId_t motor_command_queueHandle;
@@ -90,18 +91,37 @@ static bool WindVane_Parse_NMEA_Sentence(const char *sentence, WindSample_t *sam
 
 static const char *JSON_FindValue(const char *packet, const char *key)
 {
-    const char *pos = strstr(packet, key);
-    if (pos == NULL)
+    if (packet == NULL || key == NULL)
         return NULL;
 
-    // Advance past the key
-    pos += strlen(key);
+    const char *pos = packet;
 
-    // Skip any whitespace
-    while (*pos == ' ')
-        pos++;
+    while ((pos = strstr(pos, key)) != NULL)
+    {
+        /* Walk back over whitespace to find the real preceding character */
+        if (pos > packet)
+        {
+            const char *prev = pos - 1;
+            while (prev > packet && *prev == ' ')
+                prev--;
 
-    return pos;
+            char c = *prev;
+            if (c != '"' && c != '{' && c != ',')
+            {
+                pos++;
+                continue; /* Substring match inside a longer key, skip it */
+            }
+        }
+
+        /* Valid key match --- advance past it and skip whitespace */
+        pos += strlen(key);
+        while (*pos == ' ')
+            pos++;
+
+        return pos;
+    }
+
+    return NULL;
 }
 
 static bool XBee_Parse_JSON(const char *packet, MotorCommand_t *cmd)
@@ -137,65 +157,70 @@ static bool RPi_Parse_JSON(const char *packet, RPiSample_t *rpi)
 {
     if (packet == NULL || rpi == NULL)
         return false;
-    if (packet[0] != '{')
+
+    /* Locate the inner object inside "TargetsOutput":[{ ... }] */
+    const char *obj = strchr(packet, '[');
+    if (obj == NULL)
         return false;
-    if (strchr(packet, '}') == NULL)
+    obj = strchr(obj, '{');
+    if (obj == NULL)
+        return false;
+    if (strchr(obj, '}') == NULL)
         return false;
 
     const char *val;
 
     /* Targets */
-    val = JSON_FindValue(packet, "tb:");
+    val = JSON_FindValue(obj, "targetBearing:");
     if (val == NULL)
         return false;
     rpi->target_bearing = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(packet, "wlat:");
+    val = JSON_FindValue(obj, "waypointLat:");
     if (val == NULL)
         return false;
-    rpi->waypoint_lat = Conversions_StringToFloat(val);
+    rpi->target_lat = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(packet, "wlon:");
+    val = JSON_FindValue(obj, "waypointLon:");
     if (val == NULL)
         return false;
-    rpi->waypoint_lon = Conversions_StringToFloat(val);
+    rpi->target_lon = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(packet, "tsa:");
+    val = JSON_FindValue(obj, "targetSailAngle:");
     if (val == NULL)
         return false;
     rpi->target_sail_angle = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(packet, "tra:");
+    val = JSON_FindValue(obj, "targetFlapAngle:");
+    if (val == NULL)
+        return false;
+    rpi->target_flap_angle = Conversions_StringToFloat(val);
+
+    val = JSON_FindValue(obj, "targetRudderAngle:");
     if (val == NULL)
         return false;
     rpi->target_rudder_angle = Conversions_StringToFloat(val);
 
-    /* GPS */
-    val = JSON_FindValue(packet, "clat:");
+    /* Navigation state */
+    val = JSON_FindValue(obj, "latitude:");
     if (val == NULL)
         return false;
     rpi->current_lat = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(packet, "clon:");
+    val = JSON_FindValue(obj, "longitude:");
     if (val == NULL)
         return false;
     rpi->current_lon = Conversions_StringToFloat(val);
 
-    /* IMU */
-    val = JSON_FindValue(packet, "pitch:");
+    val = JSON_FindValue(obj, "headingAngle:");
     if (val == NULL)
         return false;
-    rpi->pitch = Conversions_StringToFloat(val);
+    rpi->current_bearing = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(packet, "roll:");
+    val = JSON_FindValue(obj, "windAngle:");
     if (val == NULL)
         return false;
-    rpi->roll = Conversions_StringToFloat(val);
-
-    val = JSON_FindValue(packet, "yaw:");
-    if (val == NULL)
-        return false;
-    rpi->yaw = Conversions_StringToFloat(val);
+    rpi->wind_angle = Conversions_StringToFloat(val);
 
     return true;
 }
@@ -424,7 +449,7 @@ static void ProcessRaspberryData(uint8_t data)
 
     rpi_packet[index++] = data;
 
-    if (data == '\n')
+    if (data == '}')
     {
         collecting = false;
         rpi_packet[index] = '\0';
@@ -434,6 +459,8 @@ static void ProcessRaspberryData(uint8_t data)
         if (RPi_Parse_JSON(rpi_packet, &RPi_sample))
         {
             // osMessageQueuePut(nav_queueHandle, &nav, 0, osNoWait);
+            RPi_UpdateLatest(&RPi_sample);
+            //Debug_Print_String("RPi data parsed and stored\r\n");
         }
     }
 }
