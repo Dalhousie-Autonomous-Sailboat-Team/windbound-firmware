@@ -39,7 +39,7 @@ typedef struct COMMAND_ENTRY
 /* Command Table */
 Command_Entry_t Command_Table[] = {
     {"get_angle", Get_Angle_Handler}, // read from any of 4 encoders
-    {"set_pwm", Set_PWM_Handler},     // set motor PWM - open loop
+    {"set_pwm", Set_PWM_Handler},     // set motor PWM
     {"set_angle", Set_Angle_Handler}      // set motor position - closed loop
 };
 
@@ -156,5 +156,8 @@ static Command_Status_t Set_PWM_Handler(Command_Message_t *command_message)
 static Command_Status_t Set_Angle_Handler(Command_Message_t *command_message)
 {
     // Placeholder for future closed-loop position control command handler
+    
+
+
     return COMMAND_STATUS_SUCCESS;
 }

@@ -61,7 +61,7 @@ void TelemetryTask(void *argument)
                  (int)rpi.current_lat,
                  (int)rpi.current_lon,
                  (int)rpi.current_bearing,
-                 (int)rpi.wind_angle,
+                 (int)rpi.current_wind_angle,
                  (int)sail_enc.angle);
         // UserUART_Transmit(UART_PORT_XBEE, (uint8_t *)buf, strlen(buf));
         Radio_Print_String(buf);

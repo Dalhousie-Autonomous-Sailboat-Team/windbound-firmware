@@ -85,12 +85,10 @@ bool Encoder_GetLatest(EncoderSample_t *out)
     return true;
 }
 
-
 void EncoderTask(void *argument)
 {
     //(void)argument;
     char buf[64];
-
     EncoderSample_t sample;
     sample.channel = ENCODER_MUX_CHANNEL;
 

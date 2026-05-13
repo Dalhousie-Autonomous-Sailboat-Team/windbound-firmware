@@ -43,7 +43,7 @@ typedef struct
     float current_lat;
     float current_lon;
     float current_bearing;        /* degrees, [0, 360]                   */
-    float wind_angle;
+    float current_wind_angle;
 
 } RPiSample_t;
 

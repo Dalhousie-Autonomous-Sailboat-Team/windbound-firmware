@@ -41,7 +41,7 @@ float PID_Update(PID_t *pid, float setpoint, float measured, float dt)
     /* ── Derivative (on measurement, not error, to avoid derivative kick) */
     float derivative = (error - pid->prev_error) / dt;
     pid->prev_error  = error;
-
+    
     /* ── Output ──────────────────────────────────────────────────────── */
     float output = (pid->kp * error)
                  + (pid->ki * pid->integral)

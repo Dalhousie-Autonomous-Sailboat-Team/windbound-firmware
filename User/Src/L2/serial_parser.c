@@ -220,7 +220,7 @@ static bool RPi_Parse_JSON(const char *packet, RPiSample_t *rpi)
     val = JSON_FindValue(obj, "windAngle:");
     if (val == NULL)
         return false;
-    rpi->wind_angle = Conversions_StringToFloat(val);
+    rpi->current_wind_angle = Conversions_StringToFloat(val);
 
     return true;
 }
@@ -364,6 +364,7 @@ static void ProcessWindvaneData(uint8_t data)
             WindSample_t sample;
             if (WindVane_Parse_NMEA_Sentence(nmea_sentence, &sample))
             {
+                //char buf[64];
                 // WindVaneBuf_Push(&sample);
                 //  For now, just print the parsed data
                 //  printf("Parsed Wind Sample: Direction=%.1f%c, Speed=%.1f%c, Status=%c\n",
@@ -371,8 +372,11 @@ static void ProcessWindvaneData(uint8_t data)
                 //         sample.speed, sample.speed_unit,
                 //         sample.status);
                 // Debug_Print_String("Something parsed from windvane\r\n");
+                //osMessageQueuePut(wind_queueHandle, &sample, 0, 0);
+                // sprintf(buf, "Parsed Wind Sample: Direction=%d\r\n",(int)sample.direction);
+                // Debug_Print_String(buf);
                 osMessageQueuePut(wind_queueHandle, &sample, 0, 0);
-                Debug_Print_String("Windvane data parsed and queued\r\n");
+                //Debug_Print_String("Windvane data parsed and queued\r\n");
             }
         }
 
@@ -426,14 +430,15 @@ static void ProcessXbeeData(uint8_t data)
 
 static void ProcessRaspberryData(uint8_t data)
 {
-
-    static char rpi_packet[128];
+    static char rpi_packet[256];   // also bumped size — your packet is ~120 chars
     static uint8_t index = 0;
     static bool collecting = false;
+    static uint8_t brace_depth = 0;
 
-    if (data == '{')
+    if (data == '{' && !collecting)
     {
         index = 0;
+        brace_depth = 0;
         collecting = true;
     }
 
@@ -444,23 +449,28 @@ static void ProcessRaspberryData(uint8_t data)
     {
         collecting = false;
         index = 0;
+        brace_depth = 0;
         return;
     }
 
     rpi_packet[index++] = data;
 
-    if (data == '}')
+    if (data == '{') brace_depth++;
+    if (data == '}') brace_depth--;
+
+    if (data == '}' && brace_depth == 0)
     {
         collecting = false;
         rpi_packet[index] = '\0';
         index = 0;
 
         RPiSample_t RPi_sample;
+        Debug_Print_String("Got full string\r\n");
+
         if (RPi_Parse_JSON(rpi_packet, &RPi_sample))
         {
-            // osMessageQueuePut(nav_queueHandle, &nav, 0, osNoWait);
             RPi_UpdateLatest(&RPi_sample);
-            //Debug_Print_String("RPi data parsed and stored\r\n");
+            Debug_Print_String("RPi data parsed and stored\r\n");
         }
     }
 }
