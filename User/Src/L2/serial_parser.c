@@ -392,6 +392,12 @@ static void ProcessXbeeData(uint8_t data)
     static char xbee_packet[64];
     static uint8_t index = 0;
     static bool collecting = false;
+    
+    // Debug_Print_String("Received data from Xbee\r\n");
+    //snprintf(xbee_packet, sizeof(xbee_packet), "Received char: %c\r\n", data);
+    // Debug_Print_String((char[]){(char)data, '\0'});
+
+
 
     // Start collecting on '{'
     if (data == '{')
@@ -423,7 +429,8 @@ static void ProcessXbeeData(uint8_t data)
         MotorCommand_t cmd;
         if (XBee_Parse_JSON(xbee_packet, &cmd))
         {
-            osMessageQueuePut(motor_command_queueHandle, &cmd, 0, 0);
+           // Debug_Print_String("Xbee command received and parsed\r\n");
+            //osMessageQueuePut(motor_command_queueHandle, &cmd, 0, 0);
         }
     }
 }
