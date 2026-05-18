@@ -2,12 +2,14 @@
 #include "cmsis_os.h"
 #include "L1/user_uart.h"
 #include "L2/app_types.h"
+#include "L3/boat_mode.h"
 
 #include <stdio.h>
 #include <string.h>
 
 
-extern osMessageQueueId_t wind_queueHandle; 
+
+extern osMessageQueueId_t wind_queueHandle;
 extern osMutexId_t rpiMutexHandle;
 
 static char tx_buf[128];
@@ -15,24 +17,26 @@ static RPiSample_t rpi_latest;
 
 void RpiTransmitTask(void *argument)
 {
-    WindSample_t sample;
-   
+    WindSample_t sample = {0};
+
     while (true)
     {
-        // block until a wind sample arrives
-        if (osMessageQueueGet(wind_queueHandle, &sample, NULL, osWaitForever) != osOK)
-            continue;
 
-        // format as JSON
+        if (boat_mode == MODE_AUTONOMOUS)
+        {
+            if (osMessageQueueGet(wind_queueHandle, &sample, NULL, 0) != osOK)
+            {
+                osDelay(500);
+            }
+        }
+
         snprintf(tx_buf, sizeof(tx_buf),
                  "{\"SensorInput\":[{\"windAngle\":%d}]}\r\n",
                  (int)sample.direction);
 
-        // send to RPi
         RPi_Print_String(tx_buf);
 
-        //Debug_Print_String(tx_buf);
-      
+       
     }
 }
 
@@ -55,8 +59,3 @@ void RPi_GetLatest(RPiSample_t *out)
     *out = rpi_latest;
     osMutexRelease(rpiMutexHandle);
 }
-
-
-
-
-

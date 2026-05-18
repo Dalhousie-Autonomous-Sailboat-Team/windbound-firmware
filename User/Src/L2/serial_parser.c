@@ -124,7 +124,7 @@ static const char *JSON_FindValue(const char *packet, const char *key)
     return NULL;
 }
 
-static bool XBee_Parse_JSON(const char *packet, MotorCommand_t *cmd)
+static bool XBee_Parse_JSON(const char *packet, XbeeCommand_t *cmd)
 {
     // Function to parse received JSON packet that looks like {sa:45.0,ra:90.0}\r\n
 
@@ -364,19 +364,8 @@ static void ProcessWindvaneData(uint8_t data)
             WindSample_t sample;
             if (WindVane_Parse_NMEA_Sentence(nmea_sentence, &sample))
             {
-                //char buf[64];
-                // WindVaneBuf_Push(&sample);
-                //  For now, just print the parsed data
-                //  printf("Parsed Wind Sample: Direction=%.1f%c, Speed=%.1f%c, Status=%c\n",
-                //         sample.direction, sample.reference,
-                //         sample.speed, sample.speed_unit,
-                //         sample.status);
-                // Debug_Print_String("Something parsed from windvane\r\n");
-                //osMessageQueuePut(wind_queueHandle, &sample, 0, 0);
-                // sprintf(buf, "Parsed Wind Sample: Direction=%d\r\n",(int)sample.direction);
-                // Debug_Print_String(buf);
                 osMessageQueuePut(wind_queueHandle, &sample, 0, 0);
-                //Debug_Print_String("Windvane data parsed and queued\r\n");
+                
             }
         }
 
@@ -395,44 +384,42 @@ static void ProcessXbeeData(uint8_t data)
     
     // Debug_Print_String("Received data from Xbee\r\n");
     //snprintf(xbee_packet, sizeof(xbee_packet), "Received char: %c\r\n", data);
-    // Debug_Print_String((char[]){(char)data, '\0'});
+   //Debug_Print_String((char[]){(char)data, '\0'});
 
+    // // Start collecting on '{'
+    // if (data == '{')
+    // {
+    //     index = 0;
+    //     collecting = true;
+    // }
 
+    // if (!collecting)
+    //     return;
 
-    // Start collecting on '{'
-    if (data == '{')
-    {
-        index = 0;
-        collecting = true;
-    }
+    // // Overflow protection
+    // if (index >= sizeof(xbee_packet) - 1)
+    // {
+    //     collecting = false;
+    //     index = 0;
+    //     return;
+    // }
 
-    if (!collecting)
-        return;
+    // xbee_packet[index++] = data;
 
-    // Overflow protection
-    if (index >= sizeof(xbee_packet) - 1)
-    {
-        collecting = false;
-        index = 0;
-        return;
-    }
+    // // End of packet on '\n'
+    // if (data == '\n')
+    // {
+    //     collecting = false;
+    //     xbee_packet[index] = '\0';
+    //     index = 0;
 
-    xbee_packet[index++] = data;
-
-    // End of packet on '\n'
-    if (data == '\n')
-    {
-        collecting = false;
-        xbee_packet[index] = '\0';
-        index = 0;
-
-        MotorCommand_t cmd;
-        if (XBee_Parse_JSON(xbee_packet, &cmd))
-        {
-           // Debug_Print_String("Xbee command received and parsed\r\n");
-            //osMessageQueuePut(motor_command_queueHandle, &cmd, 0, 0);
-        }
-    }
+    //     XbeeCommand_t cmd;
+    //     if (XBee_Parse_JSON(xbee_packet, &cmd))
+    //     {
+    //         // Debug_Print_String("Xbee command received and parsed\r\n");
+    //         //osMessageQueuePut(xbee_command_queueHandle, &cmd, 0, 0);
+    //     }
+    // }
 }
 
 static void ProcessRaspberryData(uint8_t data)
@@ -442,44 +429,46 @@ static void ProcessRaspberryData(uint8_t data)
     static bool collecting = false;
     static uint8_t brace_depth = 0;
 
-    if (data == '{' && !collecting)
-    {
-        index = 0;
-        brace_depth = 0;
-        collecting = true;
-    }
+    Debug_Print_String((char[]){(char) data, '\0'});
 
-    if (!collecting)
-        return;
+    // if (data == '{' && !collecting)
+    // {
+    //     index = 0;
+    //     brace_depth = 0;
+    //     collecting = true;
+    // }
 
-    if (index >= sizeof(rpi_packet) - 1)
-    {
-        collecting = false;
-        index = 0;
-        brace_depth = 0;
-        return;
-    }
+    // if (!collecting)
+    //     return;
 
-    rpi_packet[index++] = data;
+    // if (index >= sizeof(rpi_packet) - 1)
+    // {
+    //     collecting = false;
+    //     index = 0;
+    //     brace_depth = 0;
+    //     return;
+    // }
 
-    if (data == '{') brace_depth++;
-    if (data == '}') brace_depth--;
+    // rpi_packet[index++] = data;
 
-    if (data == '}' && brace_depth == 0)
-    {
-        collecting = false;
-        rpi_packet[index] = '\0';
-        index = 0;
+    // if (data == '{') brace_depth++;
+    // if (data == '}') brace_depth--;
 
-        RPiSample_t RPi_sample;
-        Debug_Print_String("Got full string\r\n");
+    // if (data == '}' && brace_depth == 0)
+    // {
+    //     collecting = false;
+    //     rpi_packet[index] = '\0';
+    //     index = 0;
 
-        if (RPi_Parse_JSON(rpi_packet, &RPi_sample))
-        {
-            RPi_UpdateLatest(&RPi_sample);
-            Debug_Print_String("RPi data parsed and stored\r\n");
-        }
-    }
+    //     RPiSample_t RPi_sample;
+    //     Debug_Print_String("Got full string\r\n");
+
+    //     if (RPi_Parse_JSON(rpi_packet, &RPi_sample))
+    //     {
+    //         RPi_UpdateLatest(&RPi_sample);
+    //         //Debug_Print_String("RPi data parsed and stored\r\n");
+    //     }
+    // }
 }
 
 void UARTParserTask(void *argument)

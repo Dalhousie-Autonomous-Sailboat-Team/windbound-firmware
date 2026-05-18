@@ -27,7 +27,7 @@ typedef struct
 {
     float sail_angle;
     float rud_angle;
-} MotorCommand_t;
+} XbeeCommand_t;
 
 typedef struct
 {

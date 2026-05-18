@@ -92,6 +92,12 @@ const osThreadAttr_t sailMotorTask_attributes = {
     .name = "sailMotorTask",
     .priority = (osPriority_t)osPriorityNormal,
     .stack_size = 512 * 4};
+/* Definitions for rudderMotorTask */
+osThreadId_t rudderMotorTaskHandle;
+const osThreadAttr_t rudderMotorTask_attributes = {
+    .name = "rudderMotorTask",
+    .priority = (osPriority_t)osPriorityNormal,
+    .stack_size = 128 * 4};
 /* Definitions for flapMotorTask */
 osThreadId_t flapMotorTaskHandle;
 const osThreadAttr_t flapMotorTask_attributes = {
@@ -114,10 +120,10 @@ const osMutexAttr_t rpiMutex_attributes = {
 osMessageQueueId_t uart_rx_queueHandle;
 const osMessageQueueAttr_t uart_rx_queue_attributes = {
     .name = "uart_rx_queue"};
-/* Definitions for motor_command_queue */
-osMessageQueueId_t motor_command_queueHandle;
-const osMessageQueueAttr_t motor_command_queue_attributes = {
-    .name = "motor_command_queue"};
+/* Definitions for xbee_command_queue */
+osMessageQueueId_t xbee_command_queueHandle;
+const osMessageQueueAttr_t xbee_command_queue_attributes = {
+    .name = "xbee_command_queue"};
 /* Definitions for wind_queue */
 osMessageQueueId_t wind_queueHandle;
 const osMessageQueueAttr_t wind_queue_attributes = {
@@ -148,31 +154,31 @@ const osSemaphoreAttr_t raspberry_tx_semaphore_attributes = {
 /* Functions needed when configGENERATE_RUN_TIME_STATS is on */
 __weak void configureTimerForRunTimeStats(void)
 {
-  /* Enable TRC */
-  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    /* Enable TRC */
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
 
-  /* Reset the cycle counter */
-  DWT->CYCCNT = 0;
+    /* Reset the cycle counter */
+    DWT->CYCCNT = 0;
 
-  /* Enable the cycle counter */
-  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+    /* Enable the cycle counter */
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
 __weak unsigned long getRunTimeCounterValue(void)
 {
-  return DWT->CYCCNT;
+    return DWT->CYCCNT;
 }
 /* USER CODE END 1 */
 
 /* USER CODE BEGIN PREPOSTSLEEP */
 __weak void PreSleepProcessing(uint32_t ulExpectedIdleTime)
 {
-  /* place for user code */
+    /* place for user code */
 }
 
 __weak void PostSleepProcessing(uint32_t ulExpectedIdleTime)
 {
-  /* place for user code */
+    /* place for user code */
 }
 /* USER CODE END PREPOSTSLEEP */
 
@@ -183,80 +189,83 @@ __weak void PostSleepProcessing(uint32_t ulExpectedIdleTime)
  */
 void MX_FREERTOS_Init(void)
 {
-  /* USER CODE BEGIN Init */
+    /* USER CODE BEGIN Init */
 
-  /* USER CODE END Init */
-  /* creation of debugPrintStringMutex */
-  debugPrintStringMutexHandle = osMutexNew(&debugPrintStringMutex_attributes);
+    /* USER CODE END Init */
+    /* creation of debugPrintStringMutex */
+    debugPrintStringMutexHandle = osMutexNew(&debugPrintStringMutex_attributes);
 
-  /* creation of encoderMutex */
-  encoderMutexHandle = osMutexNew(&encoderMutex_attributes);
+    /* creation of encoderMutex */
+    encoderMutexHandle = osMutexNew(&encoderMutex_attributes);
 
-  /* creation of rpiMutex */
-  rpiMutexHandle = osMutexNew(&rpiMutex_attributes);
+    /* creation of rpiMutex */
+    rpiMutexHandle = osMutexNew(&rpiMutex_attributes);
 
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-  /* creation of i2c2_semaphore */
-  i2c2_semaphoreHandle = osSemaphoreNew(1, 0, &i2c2_semaphore_attributes);
+    /* USER CODE BEGIN RTOS_MUTEX */
+    /* add mutexes, ... */
+    /* USER CODE END RTOS_MUTEX */
+    /* creation of i2c2_semaphore */
+    i2c2_semaphoreHandle = osSemaphoreNew(1, 0, &i2c2_semaphore_attributes);
 
-  /* creation of radio_tx_semaphore */
-  radio_tx_semaphoreHandle = osSemaphoreNew(1, 1, &radio_tx_semaphore_attributes);
+    /* creation of radio_tx_semaphore */
+    radio_tx_semaphoreHandle = osSemaphoreNew(1, 1, &radio_tx_semaphore_attributes);
 
-  /* creation of raspberry_tx_semaphore */
-  raspberry_tx_semaphoreHandle = osSemaphoreNew(1, 1, &raspberry_tx_semaphore_attributes);
+    /* creation of raspberry_tx_semaphore */
+    raspberry_tx_semaphoreHandle = osSemaphoreNew(1, 1, &raspberry_tx_semaphore_attributes);
 
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
+    /* USER CODE BEGIN RTOS_SEMAPHORES */
+    /* add semaphores, ... */
+    /* USER CODE END RTOS_SEMAPHORES */
 
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-  /* creation of uart_rx_queue */
-  uart_rx_queueHandle = osMessageQueueNew(32, sizeof(UART_Char_t), &uart_rx_queue_attributes);
-  /* creation of motor_command_queue */
-  motor_command_queueHandle = osMessageQueueNew(8, sizeof(MotorCommand_t), &motor_command_queue_attributes);
-  /* creation of wind_queue */
-  wind_queueHandle = osMessageQueueNew(4, sizeof(WindSample_t), &wind_queue_attributes);
-  /* creation of rpi_queue */
-  rpi_queueHandle = osMessageQueueNew(4, sizeof(RPiSample_t), &rpi_queue_attributes);
+    /* USER CODE BEGIN RTOS_TIMERS */
+    /* start timers, add new ones, ... */
+    /* USER CODE END RTOS_TIMERS */
+    /* creation of uart_rx_queue */
+    uart_rx_queueHandle = osMessageQueueNew(32, sizeof(UART_Char_t), &uart_rx_queue_attributes);
+    /* creation of xbee_command_queue */
+    xbee_command_queueHandle = osMessageQueueNew(8, sizeof(XbeeCommand_t), &xbee_command_queue_attributes);
+    /* creation of wind_queue */
+    wind_queueHandle = osMessageQueueNew(4, sizeof(WindSample_t), &wind_queue_attributes);
+    /* creation of rpi_queue */
+    rpi_queueHandle = osMessageQueueNew(4, sizeof(RPiSample_t), &rpi_queue_attributes);
 
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-  /* creation of initTask */
-  initTaskHandle = osThreadNew(InitTask, NULL, &initTask_attributes);
+    /* USER CODE BEGIN RTOS_QUEUES */  
+    /* add queues, ... */
+    /* USER CODE END RTOS_QUEUES */
+    /* creation of initTask */
+    initTaskHandle = osThreadNew(InitTask, NULL, &initTask_attributes);
 
-  /* creation of uartParserTask */
-  uartParserTaskHandle = osThreadNew(UARTParserTask, NULL, &uartParserTask_attributes);
+    /* creation of uartParserTask */
+    uartParserTaskHandle = osThreadNew(UARTParserTask, NULL, &uartParserTask_attributes);
 
-  /* creation of heartbeatTask */
-  heartbeatTaskHandle = osThreadNew(HeartbeatTask, NULL, &heartbeatTask_attributes);
+    /* creation of heartbeatTask */
+    heartbeatTaskHandle = osThreadNew(HeartbeatTask, NULL, &heartbeatTask_attributes);
 
-  /* creation of encoderTask */
-  encoderTaskHandle = osThreadNew(EncoderTask, NULL, &encoderTask_attributes);
+    /* creation of encoderTask */
+    encoderTaskHandle = osThreadNew(EncoderTask, NULL, &encoderTask_attributes);
 
-  /* creation of telemetryTask */
-  telemetryTaskHandle = osThreadNew(TelemetryTask, NULL, &telemetryTask_attributes);
+    /* creation of telemetryTask */
+    telemetryTaskHandle = osThreadNew(TelemetryTask, NULL, &telemetryTask_attributes);
 
-  /* creation of rpiTransmitTask */
-  rpiTransmitTaskHandle = osThreadNew(RpiTransmitTask, NULL, &rpiTransmitTask_attributes);
+    /* creation of rpiTransmitTask */
+    //rpiTransmitTaskHandle = osThreadNew(RpiTransmitTask, NULL, &rpiTransmitTask_attributes);
 
-  /* creation of sailMotorTask */
-  sailMotorTaskHandle = osThreadNew(SailMotorTask, NULL, &sailMotorTask_attributes);
+    /* creation of sailMotorTask */
+    sailMotorTaskHandle = osThreadNew(SailMotorTask, NULL, &sailMotorTask_attributes);
 
-  /* creation of flapMotorTask */
-  //flapMotorTaskHandle = osThreadNew(FlapMotorTask, NULL, &flapMotorTask_attributes);
+    /* creation of rudderMotorTask */
+    rudderMotorTaskHandle = osThreadNew(RudderMotorTask, NULL, &rudderMotorTask_attributes);
 
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
+    /* creation of flapMotorTask */
+    // flapMotorTaskHandle = osThreadNew(FlapMotorTask, NULL, &flapMotorTask_attributes);
 
-  /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
-  /* USER CODE END RTOS_EVENTS */
+    /* USER CODE BEGIN RTOS_THREADS */
+    /* add threads, ... */
+    /* USER CODE END RTOS_THREADS */
+
+    /* USER CODE BEGIN RTOS_EVENTS */
+    /* add events, ... */
+    /* USER CODE END RTOS_EVENTS */
 }
 
 /* Private application code --------------------------------------------------*/
