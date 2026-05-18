@@ -116,22 +116,20 @@ const osMutexAttr_t encoderMutex_attributes = {
 osMutexId_t rpiMutexHandle;
 const osMutexAttr_t rpiMutex_attributes = {
     .name = "rpiMutex"};
+/* Definitions for windMutex */
+osMutexId_t windMutexHandle;
+const osMutexAttr_t windMutex_attributes = {
+    .name = "windMutex"};
+/* Definitions for xbeeMutex */
+osMutexId_t xbeeMutexHandle;
+const osMutexAttr_t xbeeMutex_attributes = {
+    .name = "xbeeMutex"};
+
 /* Definitions for uart_rx_queue */
 osMessageQueueId_t uart_rx_queueHandle;
 const osMessageQueueAttr_t uart_rx_queue_attributes = {
     .name = "uart_rx_queue"};
-/* Definitions for xbee_command_queue */
-osMessageQueueId_t xbee_command_queueHandle;
-const osMessageQueueAttr_t xbee_command_queue_attributes = {
-    .name = "xbee_command_queue"};
-/* Definitions for wind_queue */
-osMessageQueueId_t wind_queueHandle;
-const osMessageQueueAttr_t wind_queue_attributes = {
-    .name = "wind_queue"};
-/* Definitions for rpi_queue */
-osMessageQueueId_t rpi_queueHandle;
-const osMessageQueueAttr_t rpi_queue_attributes = {
-    .name = "rpi_queue"};
+
 /* Definitions for i2c2_semaphore */
 osSemaphoreId_t i2c2_semaphoreHandle;
 const osSemaphoreAttr_t i2c2_semaphore_attributes = {
@@ -200,6 +198,10 @@ void MX_FREERTOS_Init(void)
 
     /* creation of rpiMutex */
     rpiMutexHandle = osMutexNew(&rpiMutex_attributes);
+    /* creation of windMutex */
+    windMutexHandle = osMutexNew(&windMutex_attributes);
+    /* creation of xbeeMutex */
+    xbeeMutexHandle = osMutexNew(&xbeeMutex_attributes);
 
     /* USER CODE BEGIN RTOS_MUTEX */
     /* add mutexes, ... */
@@ -222,12 +224,8 @@ void MX_FREERTOS_Init(void)
     /* USER CODE END RTOS_TIMERS */
     /* creation of uart_rx_queue */
     uart_rx_queueHandle = osMessageQueueNew(32, sizeof(UART_Char_t), &uart_rx_queue_attributes);
-    /* creation of xbee_command_queue */
-    xbee_command_queueHandle = osMessageQueueNew(8, sizeof(XbeeCommand_t), &xbee_command_queue_attributes);
-    /* creation of wind_queue */
-    wind_queueHandle = osMessageQueueNew(4, sizeof(WindSample_t), &wind_queue_attributes);
-    /* creation of rpi_queue */
-    rpi_queueHandle = osMessageQueueNew(4, sizeof(RPiSample_t), &rpi_queue_attributes);
+
+
 
     /* USER CODE BEGIN RTOS_QUEUES */  
     /* add queues, ... */
@@ -248,13 +246,13 @@ void MX_FREERTOS_Init(void)
     telemetryTaskHandle = osThreadNew(TelemetryTask, NULL, &telemetryTask_attributes);
 
     /* creation of rpiTransmitTask */
-    //rpiTransmitTaskHandle = osThreadNew(RpiTransmitTask, NULL, &rpiTransmitTask_attributes);
+    rpiTransmitTaskHandle = osThreadNew(RpiTransmitTask, NULL, &rpiTransmitTask_attributes);
 
     /* creation of sailMotorTask */
-    sailMotorTaskHandle = osThreadNew(SailMotorTask, NULL, &sailMotorTask_attributes);
+    //sailMotorTaskHandle = osThreadNew(SailMotorTask, NULL, &sailMotorTask_attributes);
 
     /* creation of rudderMotorTask */
-    rudderMotorTaskHandle = osThreadNew(RudderMotorTask, NULL, &rudderMotorTask_attributes);
+   // rudderMotorTaskHandle = osThreadNew(RudderMotorTask, NULL, &rudderMotorTask_attributes);
 
     /* creation of flapMotorTask */
     // flapMotorTaskHandle = osThreadNew(FlapMotorTask, NULL, &flapMotorTask_attributes);

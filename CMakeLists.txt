@@ -61,6 +61,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Src/L2/rpi.c
     User/Src/L2/motor_control.c
     User/Src/L3/boat_mode.c
+    User/Src/L2/wind.c
+    User/Src/L2/xbee.c
 )
 
 # Add include paths

@@ -17,7 +17,6 @@
 #define TELEMETRY_BUF_LEN 256
 
 extern osMessageQueueId_t wind_queueHandle;
-extern osMessageQueueId_t rpi_queueHandle;
 
 void TelemetryTask(void *argument)
 {

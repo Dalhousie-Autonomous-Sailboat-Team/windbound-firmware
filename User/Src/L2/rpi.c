@@ -3,13 +3,12 @@
 #include "L1/user_uart.h"
 #include "L2/app_types.h"
 #include "L3/boat_mode.h"
+#include "L2/wind.h"
 
 #include <stdio.h>
 #include <string.h>
 
 
-
-extern osMessageQueueId_t wind_queueHandle;
 extern osMutexId_t rpiMutexHandle;
 
 static char tx_buf[128];
@@ -22,21 +21,14 @@ void RpiTransmitTask(void *argument)
     while (true)
     {
 
-        if (boat_mode == MODE_AUTONOMOUS)
-        {
-            if (osMessageQueueGet(wind_queueHandle, &sample, NULL, 0) != osOK)
-            {
-                osDelay(500);
-            }
-        }
-
+        Wind_GetLatest(&sample);
         snprintf(tx_buf, sizeof(tx_buf),
                  "{\"SensorInput\":[{\"windAngle\":%d}]}\r\n",
                  (int)sample.direction);
 
         RPi_Print_String(tx_buf);
+        osDelay(500);
 
-       
     }
 }
 

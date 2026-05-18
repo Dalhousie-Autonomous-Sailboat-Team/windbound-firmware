@@ -23,11 +23,11 @@
 #include "L2/app_types.h"
 #include "L2/conversions.h"
 #include "L2/rpi.h"
+#include "L2/wind.h"
+#include "L2/xbee.h"
 
 extern osMessageQueueId_t uart_rx_queueHandle;
-extern osMessageQueueId_t motor_command_queueHandle;
-extern osMessageQueueId_t wind_queueHandle;
-extern osMessageQueueId_t rpi_queueHandle;
+
 
 #define BACKSPACE_CHAR '\177'
 #define NULL_CHAR '\0'
@@ -126,8 +126,6 @@ static const char *JSON_FindValue(const char *packet, const char *key)
 
 static bool XBee_Parse_JSON(const char *packet, XbeeCommand_t *cmd)
 {
-    // Function to parse received JSON packet that looks like {sa:45.0,ra:90.0}\r\n
-
     if (packet == NULL || cmd == NULL)
         return false;
 
@@ -225,94 +223,6 @@ static bool RPi_Parse_JSON(const char *packet, RPiSample_t *rpi)
     return true;
 }
 
-static void ProcessDebugData(uint8_t data)
-{
-    static uint8_t index = 0;            /* Index for received data */
-    static uint8_t argument_counter = 0; /* Number of parsed tokens */
-    static char parse_storage[PARSE_STORAGE_LEN];
-
-    static Command_Message_t command_message;
-
-    switch (data)
-    {
-
-    case BACKSPACE_CHAR:
-        if (index > 0)
-        {
-            index--;
-            parse_storage[index] = NULL_CHAR;
-        }
-        break;
-
-    case ' ':
-
-        if (index == 0)
-        {
-            break; /* Ignore repeated spaces */
-        }
-
-        parse_storage[index] = NULL_CHAR;
-
-        if (argument_counter == 0)
-        {
-            strncpy(command_message.command,
-                    parse_storage,
-                    MAX_COMMAND_LEN - 1);
-            command_message.command[MAX_COMMAND_LEN - 1] = NULL_CHAR;
-        }
-        else if ((argument_counter - 1) < MAX_COMMAND_ARGUMENTS)
-        {
-            strncpy(command_message.arguments[argument_counter - 1],
-                    parse_storage,
-                    MAX_ARGUMENT_LEN - 1);
-            command_message.arguments[argument_counter - 1][MAX_ARGUMENT_LEN - 1] = NULL_CHAR;
-        }
-
-        argument_counter++;
-        index = 0;
-        break;
-
-    case CARRIAGE_RETURN_CHAR:
-        parse_storage[index] = NULL_CHAR;
-
-        if (index > 0 || argument_counter == 0)
-        {
-            if (argument_counter == 0)
-            {
-                strncpy(command_message.command,
-                        parse_storage,
-                        MAX_COMMAND_LEN - 1);
-                command_message.command[MAX_COMMAND_LEN - 1] = NULL_CHAR;
-            }
-            else if ((argument_counter - 1) < MAX_COMMAND_ARGUMENTS)
-            {
-                strncpy(command_message.arguments[argument_counter - 1],
-                        parse_storage,
-                        MAX_ARGUMENT_LEN - 1);
-                command_message.arguments[argument_counter - 1][MAX_ARGUMENT_LEN - 1] = NULL_CHAR;
-            }
-
-            command_message.arg_count = argument_counter;
-            Dispatch_Command(&command_message);
-        }
-
-        /* Reset parser state */
-        memset(&command_message, 0, sizeof(command_message));
-        argument_counter = 0;
-        index = 0;
-        break;
-
-    default:
-        if (index < (PARSE_STORAGE_LEN - 1))
-        {
-            parse_storage[index] = (char)tolower((unsigned char)data);
-            index++;
-        }
-
-        break;
-    }
-}
-
 static void ProcessWindvaneData(uint8_t data)
 {
     /* We only want the $IIMWV NMEA sentence from the windvane */
@@ -364,8 +274,9 @@ static void ProcessWindvaneData(uint8_t data)
             WindSample_t sample;
             if (WindVane_Parse_NMEA_Sentence(nmea_sentence, &sample))
             {
-                osMessageQueuePut(wind_queueHandle, &sample, 0, 0);
-                
+                // osMessageQueuePut(wind_queueHandle, &sample, 0, 0);
+                Wind_UpdateLatest(&sample);
+                Debug_Print_String("Parsed windvane data\r\n");
             }
         }
 
@@ -381,55 +292,55 @@ static void ProcessXbeeData(uint8_t data)
     static char xbee_packet[64];
     static uint8_t index = 0;
     static bool collecting = false;
-    
+
     // Debug_Print_String("Received data from Xbee\r\n");
-    //snprintf(xbee_packet, sizeof(xbee_packet), "Received char: %c\r\n", data);
-   //Debug_Print_String((char[]){(char)data, '\0'});
+    // snprintf(xbee_packet, sizeof(xbee_packet), "Received char: %c\r\n", data);
+    // Debug_Print_String((char[]){(char)data, '\0'});
 
-    // // Start collecting on '{'
-    // if (data == '{')
-    // {
-    //     index = 0;
-    //     collecting = true;
-    // }
+    // Start collecting on '{'
+    if (data == '{')
+    {
+        index = 0;
+        collecting = true;
+    }
 
-    // if (!collecting)
-    //     return;
+    if (!collecting)
+        return;
 
-    // // Overflow protection
-    // if (index >= sizeof(xbee_packet) - 1)
-    // {
-    //     collecting = false;
-    //     index = 0;
-    //     return;
-    // }
+    // Overflow protection
+    if (index >= sizeof(xbee_packet) - 1)
+    {
+        collecting = false;
+        index = 0;
+        return;
+    }
 
-    // xbee_packet[index++] = data;
+    xbee_packet[index++] = data;
 
-    // // End of packet on '\n'
-    // if (data == '\n')
-    // {
-    //     collecting = false;
-    //     xbee_packet[index] = '\0';
-    //     index = 0;
+    // End of packet on '\n'
+    if (data == '\n')
+    {
+        collecting = false;
+        xbee_packet[index] = '\0';
+        index = 0;
 
-    //     XbeeCommand_t cmd;
-    //     if (XBee_Parse_JSON(xbee_packet, &cmd))
-    //     {
-    //         // Debug_Print_String("Xbee command received and parsed\r\n");
-    //         //osMessageQueuePut(xbee_command_queueHandle, &cmd, 0, 0);
-    //     }
-    // }
+        XbeeCommand_t cmd;
+        if (XBee_Parse_JSON(xbee_packet, &cmd))
+        {
+            Xbee_UpdateLatest(&cmd);
+            Debug_Print_String("Parsed Xbee command\r\n");
+        }
+    }
 }
 
 static void ProcessRaspberryData(uint8_t data)
 {
-    static char rpi_packet[256];   // also bumped size — your packet is ~120 chars
+    static char rpi_packet[256]; // also bumped size — your packet is ~120 chars
     static uint8_t index = 0;
     static bool collecting = false;
     static uint8_t brace_depth = 0;
 
-    Debug_Print_String((char[]){(char) data, '\0'});
+    // Debug_Print_String((char[]){(char) data, '\0'});
 
     // if (data == '{' && !collecting)
     // {
@@ -483,7 +394,7 @@ void UARTParserTask(void *argument)
         switch (uart_char.port)
         {
         case UART_PORT_4: // data from PC debug
-            ProcessDebugData(uart_char.data);
+            // ProcessDebugData(uart_char.data);
             break;
 
         case UART_PORT_3: // data from windvane
