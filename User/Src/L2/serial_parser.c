@@ -276,7 +276,7 @@ static void ProcessWindvaneData(uint8_t data)
             {
                 // osMessageQueuePut(wind_queueHandle, &sample, 0, 0);
                 Wind_UpdateLatest(&sample);
-                Debug_Print_String("Parsed windvane data\r\n");
+                //Debug_Print_String("Parsed windvane data\r\n");
             }
         }
 
@@ -328,7 +328,7 @@ static void ProcessXbeeData(uint8_t data)
         if (XBee_Parse_JSON(xbee_packet, &cmd))
         {
             Xbee_UpdateLatest(&cmd);
-            Debug_Print_String("Parsed Xbee command\r\n");
+            //Debug_Print_String("Parsed Xbee command\r\n");
         }
     }
 }

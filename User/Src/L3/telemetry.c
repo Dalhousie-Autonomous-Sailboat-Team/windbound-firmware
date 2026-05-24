@@ -33,8 +33,7 @@ void TelemetryTask(void *argument)
         // get data
         RPi_GetLatest(&rpi);
         Encoder_GetLatest(&sail_enc);
-        //Encoder_GetLatest(FLAP_MUX_CHANNEL, &flap_enc);
-
+        
         /* ── 3. Format and transmit ──────────────────────────────── */
         char buf[TELEMETRY_BUF_LEN];
         snprintf(buf, sizeof(buf),

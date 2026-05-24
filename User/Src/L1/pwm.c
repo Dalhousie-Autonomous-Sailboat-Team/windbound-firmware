@@ -52,7 +52,7 @@ void PWM_Init(void)
      */
 
     /* Initialize servo PWM duty cycle to 1500 */
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 0);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 6400);
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 
     /* Initialize Motor PWM duty cycles to 0 */

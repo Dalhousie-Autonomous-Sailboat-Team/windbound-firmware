@@ -61,8 +61,6 @@ extern osThreadId_t encoderTaskHandle;
 extern osThreadId_t telemetryTaskHandle;
 extern osThreadId_t rpiTransmitTaskHandle;
 extern osThreadId_t sailMotorTaskHandle;
-extern osThreadId_t rudderMotorTaskHandle;
-extern osThreadId_t flapMotorTaskHandle;
 extern osMutexId_t debugPrintStringMutexHandle;
 extern osMutexId_t encoderMutexHandle;
 extern osMutexId_t rpiMutexHandle;
@@ -85,8 +83,6 @@ extern void EncoderTask(void *argument);
 extern void TelemetryTask(void *argument);
 extern void RpiTransmitTask(void *argument);
 extern void SailMotorTask(void *argument);
-extern void RudderMotorTask(void *argument);
-extern void FlapMotorTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 

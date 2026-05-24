@@ -8,16 +8,16 @@
 #include "L1/user_uart.h"
 #include <stdio.h>
 #include "L3/boat_mode.h"
-
-extern osMessageQueueId_t wind_queueHandle;
-extern osMessageQueueId_t xbee_command_queueHandle;
-// Bang Bang control
+#include "L2/wind.h"
+#include "L2/xbee.h"
 
 #define SAIL_TASK_PERIOD_MS 50
 #define SAIL_DEAD_BAND_DEG 20.0f
 #define MOTOR_FULL 12800
 #define MOTOR_OFF 0
 #define RUDDER_TASK_PERIOD_MS 20
+
+static char buf[128];
 
 static float wrap_error(float error)
 {
@@ -28,104 +28,191 @@ static float wrap_error(float error)
     return error;
 }
 
+// void SailMotorTask(void *argument)
+// {
+//     (void)argument;
+
+//     WindSample_t wind = {0};
+//     EncoderSample_t enc = {0};
+//     RPiSample_t rpi_sample = {0};
+//     XbeeCommand_t xbee_cmd = {0};
+//     float target_sail_angle = 0.0f;
+//     char buf[64];
+
+//     while (true)
+//     {
+
+//         if (boat_mode == MODE_WIND_FOLLOWING)
+//         {
+//             osMessageQueueGet(wind_queueHandle, &wind, NULL, osWaitForever);
+//             target_sail_angle = wind.direction;
+//         }
+//         else if (boat_mode == MODE_AUTONOMOUS)
+//         {
+//             RPi_GetLatest(&rpi_sample);
+
+//             target_sail_angle = rpi_sample.target_sail_angle;
+//         }
+//         else if (boat_mode == MODE_MANUAL)
+//         {
+//             /* MODE_MANUAL: block until XBee sends a packet — ignore RPi and wind entirely */
+//             osMessageQueueGet(xbee_command_queueHandle, &xbee_cmd, NULL, osWaitForever);
+//             target_sail_angle = xbee_cmd.sail_angle;
+//         }
+
+//         /* ── 2. Read current sail position ───────────────────────────── */
+//         Encoder_GetLatest(&enc);
+
+//         sprintf(buf, "windvane angle =%d, encoder angle =%d\r\n", (int)wind.direction, (int)enc.angle);
+//         Debug_Print_String(buf);
+
+//         /* ── 3. Shortest-path error ──────────────────────────────────── */
+//         float error = wrap_error(target_sail_angle - enc.angle);
+
+//         /* ── 4. Bang-bang motor control ──────────────────────────────── */
+//         if (error > SAIL_DEAD_BAND_DEG)
+//         {
+//             /* Sail is behind — drive forward */
+//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 12800);
+//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
+//         }
+//         else if (error < -SAIL_DEAD_BAND_DEG)
+//         {
+//             /* Sail is ahead — drive backward */
+//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
+//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 12800);
+//         }
+//         else
+//         {
+//             /* Within ±20° — stop */
+//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
+//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
+//         }
+//         // osDelay(100);
+//     }
+// }
+
+// void RudderMotorTask(void *argument)
+// {
+//     (void)argument;
+
+//     RPiSample_t rpi_cmd = {0};
+//     XbeeCommand_t xbee_cmd = {0};
+//     float rudder_angle = 0.0f;
+
+//     while (true)
+//     {
+//         if (boat_mode == MODE_AUTONOMOUS)
+//         {
+//             /* Get RPi rudder angle as default */
+//             RPi_GetLatest(&rpi_cmd);
+//             rudder_angle = rpi_cmd.target_rudder_angle;
+
+//             /* Override if XBee is sending anything non-zero */
+//             if (osMessageQueueGet(xbee_command_queueHandle, &xbee_cmd, NULL, 0) == osOK)
+//             {
+//                 if (xbee_cmd.rud_angle != 0.0f)
+//                     rudder_angle = xbee_cmd.rud_angle;
+//             }
+//         }
+//         else /* MODE_MANUAL */
+//         {
+//             /* Block until XBee sends a packet — ignore RPi entirely */
+//             osMessageQueueGet(xbee_command_queueHandle, &xbee_cmd, NULL, osWaitForever);
+//             rudder_angle = xbee_cmd.rud_angle;
+//         }
+
+//         // /* Map -45 to +45 → 1000 to 2000 µs */
+//         // uint16_t pulse = (uint16_t)(1500.0f + (rudder_angle / 45.0f) * 500.0f);
+//         // __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pulse);
+
+//         osDelay(RUDDER_TASK_PERIOD_MS);
+//     }
+// }
+
 void SailMotorTask(void *argument)
 {
     (void)argument;
 
     WindSample_t wind = {0};
+    RPiSample_t rpi = {0};
+    XbeeCommand_t xbee = {0};
     EncoderSample_t enc = {0};
-    RPiSample_t rpi_sample = {0};
-    XbeeCommand_t xbee_cmd = {0};
+
     float target_sail_angle = 0.0f;
-    char buf[64];
+    float target_rudder_angle = 0.0f;
 
     while (true)
     {
 
-        if (boat_mode == MODE_WIND_FOLLOWING)
-        {
-            osMessageQueueGet(wind_queueHandle, &wind, NULL, osWaitForever);
-            target_sail_angle = wind.direction;
-        }
-        else if (boat_mode == MODE_AUTONOMOUS)
-        {
-            RPi_GetLatest(&rpi_sample);
-
-            target_sail_angle = rpi_sample.target_sail_angle;
-        }
-        else if (boat_mode == MODE_MANUAL)
-        {
-            /* MODE_MANUAL: block until XBee sends a packet — ignore RPi and wind entirely */
-            osMessageQueueGet(xbee_command_queueHandle, &xbee_cmd, NULL, osWaitForever);
-            target_sail_angle = xbee_cmd.sail_angle;
-        }
-
-        /* ── 2. Read current sail position ───────────────────────────── */
+        // access all three mutexes every time and decide which to use based on mode and validity
+        Wind_GetLatest(&wind);
+        RPi_GetLatest(&rpi);
+        Xbee_GetLatest(&xbee);
         Encoder_GetLatest(&enc);
 
-        sprintf(buf, "windvane angle =%d, encoder angle =%d\r\n", (int)wind.direction, (int)enc.angle);
+        snprintf(buf, sizeof(buf), "wind=%d, rpi_sail=%d, rpi_rudder=%d, xbee_sail=%d, xbee_rudder=%d, enc=%d\r\n",
+                 (int)wind.direction, (int)rpi.target_sail_angle, (int)rpi.target_rudder_angle,
+                 (int)xbee.sail_angle, (int)xbee.rud_angle, (int)enc.angle);
         Debug_Print_String(buf);
 
-        /* ── 3. Shortest-path error ──────────────────────────────────── */
-        float error = wrap_error(target_sail_angle - enc.angle);
+        target_rudder_angle = xbee.rud_angle; 
 
-        /* ── 4. Bang-bang motor control ──────────────────────────────── */
-        if (error > SAIL_DEAD_BAND_DEG)
-        {
-            /* Sail is behind — drive forward */
-            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 12800);
-            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
-        }
-        else if (error < -SAIL_DEAD_BAND_DEG)
-        {
-            /* Sail is ahead — drive backward */
-            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 12800);
-        }
-        else
-        {
-            /* Within ±20° — stop */
-            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
-        }
-        // osDelay(100);
-    }
-}
+        // if (boat_mode == MODE_WIND_FOLLOWING)
+        // {
+        //     target_sail_angle = wind.direction;
+        //     target_rudder_angle = 0.0f;
+        // }
+        // else if (boat_mode == MODE_AUTONOMOUS)
+        // {
+        //     if (xbee.sail_angle != 0.0f)
+        //     {
+        //         target_sail_angle = xbee.sail_angle;
+        //     }
+        //     else
+        //     {
+        //         target_sail_angle = rpi.target_sail_angle;
+        //     }
 
-void RudderMotorTask(void *argument)
-{
-    (void)argument;
+        //     if (xbee.rud_angle != 0.0f)
+        //     {
+        //         target_rudder_angle = xbee.rud_angle;
+        //     }
+        //     else
+        //     {
+        //         target_rudder_angle = rpi.target_rudder_angle;
+        //     }
+        // }
+        // else if (boat_mode == MODE_MANUAL)
+        // {
 
-    RPiSample_t rpi_cmd = {0};
-    XbeeCommand_t xbee_cmd = {0};
-    float rudder_angle = 0.0f;
+        //     target_sail_angle = xbee.sail_angle;
+        //     target_rudder_angle = xbee.rud_angle;
+        // }
 
-    while (true)
-    {
-        if (boat_mode == MODE_AUTONOMOUS)
-        {
-            /* Get RPi rudder angle as default */
-            RPi_GetLatest(&rpi_cmd);
-            rudder_angle = rpi_cmd.target_rudder_angle;
+        // // Bang Bang control for sail
+        // float error = wrap_error(target_sail_angle - enc.angle);
 
-            /* Override if XBee is sending anything non-zero */
-            if (osMessageQueueGet(xbee_command_queueHandle, &xbee_cmd, NULL, 0) == osOK)
-            {
-                if (xbee_cmd.rud_angle != 0.0f)
-                    rudder_angle = xbee_cmd.rud_angle;
-            }
-        }
-        else /* MODE_MANUAL */
-        {
-            /* Block until XBee sends a packet — ignore RPi entirely */
-            osMessageQueueGet(xbee_command_queueHandle, &xbee_cmd, NULL, osWaitForever);
-            rudder_angle = xbee_cmd.rud_angle;
-        }
+        // if (error > SAIL_DEAD_BAND_DEG)
+        // {
+        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, MOTOR_FULL);
+        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, MOTOR_OFF);
+        // }
+        // else if (error < -SAIL_DEAD_BAND_DEG)
+        // {
+        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, MOTOR_OFF);
+        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, MOTOR_FULL);
+        // }
+        // else
+        // {
+        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, MOTOR_OFF);
+        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, MOTOR_OFF);
+        // }
 
-        // /* Map -45 to +45 → 1000 to 2000 µs */
-        // uint16_t pulse = (uint16_t)(1500.0f + (rudder_angle / 45.0f) * 500.0f);
-        // __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pulse);
+        //Direct control for rudder
+        uint16_t pulse = (uint16_t)(1500.0f + (target_rudder_angle / 45.0f) * 500.0f);
+        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pulse);
 
-        osDelay(RUDDER_TASK_PERIOD_MS);
+        osDelay(500);
     }
 }
