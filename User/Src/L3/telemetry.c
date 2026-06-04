@@ -63,6 +63,7 @@ void TelemetryTask(void *argument)
                  (int)sail_enc.angle);
         // UserUART_Transmit(UART_PORT_XBEE, (uint8_t *)buf, strlen(buf));
         Radio_Print_String(buf);
+        //Debug_Print_String(buf);
         /* ── 4. Fixed period ─────────────────────────────────────── */
         osDelay(TELEMETRY_PERIOD_MS);
     }

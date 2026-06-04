@@ -16,6 +16,14 @@
 #define MOTOR_FULL 12800
 #define MOTOR_OFF 0
 #define RUDDER_TASK_PERIOD_MS 20
+#define XBEE_TIMEOUT_MS 2000 // 2x the send rate
+#define RPI_TIMEOUT_MS 10000 // 2x the send rate
+
+// Map XBee sail_angle (-45 to +45) -> AS5600 angle (0 to 360)
+// Define your mechanical zero point — adjust SAIL_CENTER_DEG to match
+// where the sail sits when sail_angle == 0 on the AS5600 scale
+#define SAIL_CENTER_DEG 180.0f // <-- tune this to your physical setup
+#define SAIL_RANGE_DEG 45.0f   // max deflection each side
 
 static char buf[128];
 
@@ -28,107 +36,19 @@ static float wrap_error(float error)
     return error;
 }
 
-// void SailMotorTask(void *argument)
-// {
-//     (void)argument;
+static float sail_command_to_encoder_deg(float sail_angle)
+{
+    // Linear map: -45 -> (CENTER - 45), 0 -> CENTER, +45 -> (CENTER + 45)
+    float deg = SAIL_CENTER_DEG + sail_angle;
 
-//     WindSample_t wind = {0};
-//     EncoderSample_t enc = {0};
-//     RPiSample_t rpi_sample = {0};
-//     XbeeCommand_t xbee_cmd = {0};
-//     float target_sail_angle = 0.0f;
-//     char buf[64];
+    // Wrap into [0, 360)
+    while (deg >= 360.0f)
+        deg -= 360.0f;
+    while (deg < 0.0f)
+        deg += 360.0f;
 
-//     while (true)
-//     {
-
-//         if (boat_mode == MODE_WIND_FOLLOWING)
-//         {
-//             osMessageQueueGet(wind_queueHandle, &wind, NULL, osWaitForever);
-//             target_sail_angle = wind.direction;
-//         }
-//         else if (boat_mode == MODE_AUTONOMOUS)
-//         {
-//             RPi_GetLatest(&rpi_sample);
-
-//             target_sail_angle = rpi_sample.target_sail_angle;
-//         }
-//         else if (boat_mode == MODE_MANUAL)
-//         {
-//             /* MODE_MANUAL: block until XBee sends a packet — ignore RPi and wind entirely */
-//             osMessageQueueGet(xbee_command_queueHandle, &xbee_cmd, NULL, osWaitForever);
-//             target_sail_angle = xbee_cmd.sail_angle;
-//         }
-
-//         /* ── 2. Read current sail position ───────────────────────────── */
-//         Encoder_GetLatest(&enc);
-
-//         sprintf(buf, "windvane angle =%d, encoder angle =%d\r\n", (int)wind.direction, (int)enc.angle);
-//         Debug_Print_String(buf);
-
-//         /* ── 3. Shortest-path error ──────────────────────────────────── */
-//         float error = wrap_error(target_sail_angle - enc.angle);
-
-//         /* ── 4. Bang-bang motor control ──────────────────────────────── */
-//         if (error > SAIL_DEAD_BAND_DEG)
-//         {
-//             /* Sail is behind — drive forward */
-//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 12800);
-//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
-//         }
-//         else if (error < -SAIL_DEAD_BAND_DEG)
-//         {
-//             /* Sail is ahead — drive backward */
-//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 12800);
-//         }
-//         else
-//         {
-//             /* Within ±20° — stop */
-//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-//             __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
-//         }
-//         // osDelay(100);
-//     }
-// }
-
-// void RudderMotorTask(void *argument)
-// {
-//     (void)argument;
-
-//     RPiSample_t rpi_cmd = {0};
-//     XbeeCommand_t xbee_cmd = {0};
-//     float rudder_angle = 0.0f;
-
-//     while (true)
-//     {
-//         if (boat_mode == MODE_AUTONOMOUS)
-//         {
-//             /* Get RPi rudder angle as default */
-//             RPi_GetLatest(&rpi_cmd);
-//             rudder_angle = rpi_cmd.target_rudder_angle;
-
-//             /* Override if XBee is sending anything non-zero */
-//             if (osMessageQueueGet(xbee_command_queueHandle, &xbee_cmd, NULL, 0) == osOK)
-//             {
-//                 if (xbee_cmd.rud_angle != 0.0f)
-//                     rudder_angle = xbee_cmd.rud_angle;
-//             }
-//         }
-//         else /* MODE_MANUAL */
-//         {
-//             /* Block until XBee sends a packet — ignore RPi entirely */
-//             osMessageQueueGet(xbee_command_queueHandle, &xbee_cmd, NULL, osWaitForever);
-//             rudder_angle = xbee_cmd.rud_angle;
-//         }
-
-//         // /* Map -45 to +45 → 1000 to 2000 µs */
-//         // uint16_t pulse = (uint16_t)(1500.0f + (rudder_angle / 45.0f) * 500.0f);
-//         // __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pulse);
-
-//         osDelay(RUDDER_TASK_PERIOD_MS);
-//     }
-// }
+    return deg;
+}
 
 void SailMotorTask(void *argument)
 {
@@ -145,74 +65,103 @@ void SailMotorTask(void *argument)
     while (true)
     {
 
-        // access all three mutexes every time and decide which to use based on mode and validity
+        uint32_t now = osKernelGetTickCount();
+
         Wind_GetLatest(&wind);
         RPi_GetLatest(&rpi);
         Xbee_GetLatest(&xbee);
         Encoder_GetLatest(&enc);
+
+        bool xbee_valid = xbee.ever_received &&
+                          (now - xbee.last_updated_ms) < XBEE_TIMEOUT_MS;
+        bool rpi_valid = rpi.ever_received &&
+                         (now - rpi.last_updated_ms) < RPI_TIMEOUT_MS;
+
+        if (xbee_valid)
+        {
+            Debug_Print_String("Valid Xbee found\r\n");
+        }
+        else
+        {
+            Debug_Print_String("Valid Xbee not found\r\n");
+        }
+
+        if (rpi_valid)
+        {
+            Debug_Print_String("Valid RPi found\r\n");
+        }
+        else
+        {
+            Debug_Print_String("Valid RPi not found\r\n");
+        }
+
+        // Sail angle fallback hierarchy
+        if (xbee_valid && rpi_valid)
+        {
+            target_sail_angle = (xbee.sail_angle != 0.0f) ? xbee.sail_angle : rpi.target_sail_angle;
+        }
+        else if (xbee_valid)
+        {
+            target_sail_angle = xbee.sail_angle;
+        }
+        else if (rpi_valid)
+        {
+            target_sail_angle = rpi.target_sail_angle;
+        }
+        else
+        {
+            target_sail_angle = 0.0f;
+        }
+
+        // Rudder angle fallback hierarchy
+        if (xbee_valid && rpi_valid)
+        {
+            target_rudder_angle = (xbee.rud_angle != 0.0f) ? xbee.rud_angle : rpi.target_rudder_angle;
+        }
+        else if (xbee_valid)
+        {
+            target_rudder_angle = xbee.rud_angle;
+        }
+        else if (rpi_valid)
+        {
+            target_rudder_angle = rpi.target_rudder_angle;
+        }
+        else
+        {
+            target_rudder_angle = 0.0f;
+        }
 
         snprintf(buf, sizeof(buf), "wind=%d, rpi_sail=%d, rpi_rudder=%d, xbee_sail=%d, xbee_rudder=%d, enc=%d\r\n",
                  (int)wind.direction, (int)rpi.target_sail_angle, (int)rpi.target_rudder_angle,
                  (int)xbee.sail_angle, (int)xbee.rud_angle, (int)enc.angle);
         Debug_Print_String(buf);
 
-        target_rudder_angle = xbee.rud_angle; 
+        // Convert command degrees (-45..+45) to encoder space (0..360)
+        float target_enc_deg = sail_command_to_encoder_deg(target_sail_angle);
 
-        // if (boat_mode == MODE_WIND_FOLLOWING)
-        // {
-        //     target_sail_angle = wind.direction;
-        //     target_rudder_angle = 0.0f;
-        // }
-        // else if (boat_mode == MODE_AUTONOMOUS)
-        // {
-        //     if (xbee.sail_angle != 0.0f)
-        //     {
-        //         target_sail_angle = xbee.sail_angle;
-        //     }
-        //     else
-        //     {
-        //         target_sail_angle = rpi.target_sail_angle;
-        //     }
+        // Bang Bang control for sail
+        float error = wrap_error(target_enc_deg - enc.angle);
 
-        //     if (xbee.rud_angle != 0.0f)
-        //     {
-        //         target_rudder_angle = xbee.rud_angle;
-        //     }
-        //     else
-        //     {
-        //         target_rudder_angle = rpi.target_rudder_angle;
-        //     }
-        // }
-        // else if (boat_mode == MODE_MANUAL)
-        // {
+        if (error > SAIL_DEAD_BAND_DEG)
+        {
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, MOTOR_FULL);
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, MOTOR_OFF);
+        }
+        else if (error < -SAIL_DEAD_BAND_DEG)
+        {
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, MOTOR_OFF);
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, MOTOR_FULL);
+        }
+        else
+        {
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, MOTOR_OFF);
+            __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, MOTOR_OFF);
+        }
 
-        //     target_sail_angle = xbee.sail_angle;
-        //     target_rudder_angle = xbee.rud_angle;
-        // }
-
-        // // Bang Bang control for sail
-        // float error = wrap_error(target_sail_angle - enc.angle);
-
-        // if (error > SAIL_DEAD_BAND_DEG)
-        // {
-        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, MOTOR_FULL);
-        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, MOTOR_OFF);
-        // }
-        // else if (error < -SAIL_DEAD_BAND_DEG)
-        // {
-        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, MOTOR_OFF);
-        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, MOTOR_FULL);
-        // }
-        // else
-        // {
-        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, MOTOR_OFF);
-        //     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, MOTOR_OFF);
-        // }
-
-        //Direct control for rudder
+        // Direct control for rudder
         uint16_t pulse = (uint16_t)(1500.0f + (target_rudder_angle / 45.0f) * 500.0f);
         __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pulse);
 
-        osDelay(500);
+        osDelay(SAIL_TASK_PERIOD_MS);
     }
 }

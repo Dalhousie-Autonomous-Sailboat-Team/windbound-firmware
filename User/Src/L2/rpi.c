@@ -39,6 +39,8 @@ void RPi_UpdateLatest(const RPiSample_t *sample)
 
     osMutexAcquire(rpiMutexHandle, osWaitForever);
     rpi_latest = *sample;
+    rpi_latest.ever_received = true;
+    rpi_latest.last_updated_ms = osKernelGetTickCount();
     osMutexRelease(rpiMutexHandle);
 }
 

@@ -28,7 +28,6 @@
 
 extern osMessageQueueId_t uart_rx_queueHandle;
 
-
 #define BACKSPACE_CHAR '\177'
 #define NULL_CHAR '\0'
 #define CARRIAGE_RETURN_CHAR '\r'
@@ -276,7 +275,7 @@ static void ProcessWindvaneData(uint8_t data)
             {
                 // osMessageQueuePut(wind_queueHandle, &sample, 0, 0);
                 Wind_UpdateLatest(&sample);
-                //Debug_Print_String("Parsed windvane data\r\n");
+                // Debug_Print_String("Parsed windvane data\r\n");
             }
         }
 
@@ -328,7 +327,7 @@ static void ProcessXbeeData(uint8_t data)
         if (XBee_Parse_JSON(xbee_packet, &cmd))
         {
             Xbee_UpdateLatest(&cmd);
-            //Debug_Print_String("Parsed Xbee command\r\n");
+            // Debug_Print_String("Parsed Xbee command\r\n");
         }
     }
 }
@@ -342,44 +341,46 @@ static void ProcessRaspberryData(uint8_t data)
 
     // Debug_Print_String((char[]){(char) data, '\0'});
 
-    // if (data == '{' && !collecting)
-    // {
-    //     index = 0;
-    //     brace_depth = 0;
-    //     collecting = true;
-    // }
+    if (data == '{' && !collecting)
+    {
+        index = 0;
+        brace_depth = 0;
+        collecting = true;
+    }
 
-    // if (!collecting)
-    //     return;
+    if (!collecting)
+        return;
 
-    // if (index >= sizeof(rpi_packet) - 1)
-    // {
-    //     collecting = false;
-    //     index = 0;
-    //     brace_depth = 0;
-    //     return;
-    // }
+    if (index >= sizeof(rpi_packet) - 1)
+    {
+        collecting = false;
+        index = 0;
+        brace_depth = 0;
+        return;
+    }
 
-    // rpi_packet[index++] = data;
+    rpi_packet[index++] = data;
 
-    // if (data == '{') brace_depth++;
-    // if (data == '}') brace_depth--;
+    if (data == '{')
+        brace_depth++;
+    if (data == '}')
+        brace_depth--;
 
-    // if (data == '}' && brace_depth == 0)
-    // {
-    //     collecting = false;
-    //     rpi_packet[index] = '\0';
-    //     index = 0;
+    if (data == '}' && brace_depth == 0)
+    {
+        collecting = false;
+        rpi_packet[index] = '\0';
+        index = 0;
 
-    //     RPiSample_t RPi_sample;
-    //     Debug_Print_String("Got full string\r\n");
+        RPiSample_t RPi_sample;
+        Debug_Print_String("Got full string\r\n");
 
-    //     if (RPi_Parse_JSON(rpi_packet, &RPi_sample))
-    //     {
-    //         RPi_UpdateLatest(&RPi_sample);
-    //         //Debug_Print_String("RPi data parsed and stored\r\n");
-    //     }
-    // }
+        if (RPi_Parse_JSON(rpi_packet, &RPi_sample))
+        {
+            RPi_UpdateLatest(&RPi_sample);
+            Debug_Print_String("RPi data parsed and stored\r\n");
+        }
+    }
 }
 
 void UARTParserTask(void *argument)
