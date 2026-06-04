@@ -47,7 +47,7 @@ void TelemetryTask(void *argument)
                  "\"clat\":%d,"
                  "\"clon\":%d,"
                  "\"cb\":%d,"
-                 "\"wa\":%d"
+                 "\"wa\":%d,"
                  "\"sa\":%d,"
                  "}\r\n",
                  (int)rpi.target_bearing,

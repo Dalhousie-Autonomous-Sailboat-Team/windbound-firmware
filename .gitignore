@@ -70,3 +70,4 @@ compile_commands.json
 *.su
 *.idb
 *.pdb
+.clangd
