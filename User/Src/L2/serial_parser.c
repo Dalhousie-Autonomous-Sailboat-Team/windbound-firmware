@@ -168,53 +168,53 @@ static bool RPi_Parse_JSON(const char *packet, RPiSample_t *rpi)
     const char *val;
 
     /* Targets */
-    val = JSON_FindValue(obj, "targetBearing:");
+    val = JSON_FindValue(obj, "targetBearing\":");
     if (val == NULL)
         return false;
     rpi->target_bearing = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(obj, "waypointLat:");
+    val = JSON_FindValue(obj, "waypointLat\":");
     if (val == NULL)
         return false;
     rpi->target_lat = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(obj, "waypointLon:");
+    val = JSON_FindValue(obj, "waypointLon\":");
     if (val == NULL)
         return false;
     rpi->target_lon = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(obj, "targetSailAngle:");
+    val = JSON_FindValue(obj, "targetSailAngle\":");
     if (val == NULL)
         return false;
     rpi->target_sail_angle = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(obj, "targetFlapAngle:");
+    val = JSON_FindValue(obj, "targetFlapAngle\":");
     if (val == NULL)
         return false;
     rpi->target_flap_angle = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(obj, "targetRudderAngle:");
+    val = JSON_FindValue(obj, "targetRudderAngle\":");
     if (val == NULL)
         return false;
     rpi->target_rudder_angle = Conversions_StringToFloat(val);
 
     /* Navigation state */
-    val = JSON_FindValue(obj, "latitude:");
+    val = JSON_FindValue(obj, "latitude\":");
     if (val == NULL)
         return false;
     rpi->current_lat = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(obj, "longitude:");
+    val = JSON_FindValue(obj, "longitude\":");
     if (val == NULL)
         return false;
     rpi->current_lon = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(obj, "headingAngle:");
+    val = JSON_FindValue(obj, "headingAngle\":");
     if (val == NULL)
         return false;
     rpi->current_bearing = Conversions_StringToFloat(val);
 
-    val = JSON_FindValue(obj, "windAngle:");
+    val = JSON_FindValue(obj, "windAngle\":");
     if (val == NULL)
         return false;
     rpi->current_wind_angle = Conversions_StringToFloat(val);
