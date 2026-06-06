@@ -19,6 +19,7 @@
 #define RUDDER_TASK_PERIOD_MS 20
 #define XBEE_TIMEOUT_MS 2000 // 2x the send rate
 #define RPI_TIMEOUT_MS 10000 // 2x the send rate
+#define RUDDER_ANGLE_OFFSET_PWM 100.0f // adjust for mechanical misalignment
 
 // Map XBee sail_angle (-45 to +45) -> AS5600 angle (0 to 360)
 // Define your mechanical zero point — adjust SAIL_CENTER_DEG to match
@@ -174,7 +175,9 @@ void SailMotorTask(void *argument)
         }
 
         // Direct control for rudder
-        uint16_t pulse = (uint16_t)(1500.0f + (target_rudder_angle / 45.0f) * 500.0f);
+        float rudder_center = 1500.0f + RUDDER_ANGLE_OFFSET_PWM;
+
+        uint16_t pulse = (uint16_t)(rudder_center + (target_rudder_angle / 45.0f) * 400.0f);
         __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, pulse);
 
         osDelay(SAIL_TASK_PERIOD_MS);
