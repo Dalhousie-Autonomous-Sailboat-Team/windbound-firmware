@@ -19,7 +19,7 @@
 #define RUDDER_TASK_PERIOD_MS 20
 #define XBEE_TIMEOUT_MS 2000 // 2x the send rate
 #define RPI_TIMEOUT_MS 10000 // 2x the send rate
-#define RUDDER_ANGLE_OFFSET_PWM 100.0f // adjust for mechanical misalignment
+#define RUDDER_ANGLE_OFFSET_PWM -130.0f // adjust for mechanical misalignment
 
 // Map XBee sail_angle (-45 to +45) -> AS5600 angle (0 to 360)
 // Define your mechanical zero point — adjust SAIL_CENTER_DEG to match
