@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -48,7 +48,7 @@ void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 31;
+  htim1.Init.Prescaler = 63;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim1.Init.Period = 19999;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -75,21 +75,12 @@ void MX_TIM1_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 1500;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.Pulse = 1500;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
@@ -135,7 +126,7 @@ void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 0;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 174900;
+  htim2.Init.Period = 12800;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -192,7 +183,7 @@ void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 65535;
+  htim3.Init.Period = 3200;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -287,7 +278,7 @@ void MX_TIM5_Init(void)
   htim5.Instance = TIM5;
   htim5.Init.Prescaler = 0;
   htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim5.Init.Period = 4294967295;
+  htim5.Init.Period = 3200;
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim5) != HAL_OK)
@@ -491,26 +482,16 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
   /* USER CODE BEGIN TIM1_MspPostInit 0 */
 
   /* USER CODE END TIM1_MspPostInit 0 */
-    __HAL_RCC_GPIOE_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
     /**TIM1 GPIO Configuration
-    PE9     ------> TIM1_CH1
-    PE11     ------> TIM1_CH2
     PA10     ------> TIM1_CH3
     */
-    GPIO_InitStruct.Pin = MOTOR1_OUT1_Pin|MOTOR1_OUT2_Pin;
+    GPIO_InitStruct.Pin = RUDDER_PWM_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
-    HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = Rudder_PWM_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
-    HAL_GPIO_Init(Rudder_PWM_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(RUDDER_PWM_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN TIM1_MspPostInit 1 */
 
@@ -527,7 +508,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
     PA1     ------> TIM2_CH2
     PA15(JTDI)     ------> TIM2_CH1
     */
-    GPIO_InitStruct.Pin = MOTOR2_OUT2_Pin|MOTOR2_OUT1_Pin;
+    GPIO_InitStruct.Pin = MAST_OUT2_Pin|MAST_OUT1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -549,7 +530,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* timHandle)
     PB4(NJTRST)     ------> TIM3_CH1
     PB5     ------> TIM3_CH2
     */
-    GPIO_InitStruct.Pin = MOTOR3_OUT1_Pin|MOTOR3_OUT2_Pin;
+    GPIO_InitStruct.Pin = FLAP_OUT1_Pin|FLAP_OUT2_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

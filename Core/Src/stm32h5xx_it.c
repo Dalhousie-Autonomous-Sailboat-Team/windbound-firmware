@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -22,7 +22,6 @@
 #include "stm32h5xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "assert.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,10 +57,10 @@
 /* External variables --------------------------------------------------------*/
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
-extern DMA_HandleTypeDef handle_GPDMA1_Channel1;
-extern DMA_HandleTypeDef handle_GPDMA1_Channel0;
 extern UART_HandleTypeDef huart4;
+extern UART_HandleTypeDef huart7;
 extern UART_HandleTypeDef huart8;
+extern UART_HandleTypeDef huart3;
 extern TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN EV */
@@ -92,7 +91,7 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-  ASSERT(0, "Hard Fault");
+
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -167,34 +166,6 @@ void DebugMon_Handler(void)
 /******************************************************************************/
 
 /**
-  * @brief This function handles GPDMA1 Channel 0 global interrupt.
-  */
-void GPDMA1_Channel0_IRQHandler(void)
-{
-  /* USER CODE BEGIN GPDMA1_Channel0_IRQn 0 */
-
-  /* USER CODE END GPDMA1_Channel0_IRQn 0 */
-  HAL_DMA_IRQHandler(&handle_GPDMA1_Channel0);
-  /* USER CODE BEGIN GPDMA1_Channel0_IRQn 1 */
-
-  /* USER CODE END GPDMA1_Channel0_IRQn 1 */
-}
-
-/**
-  * @brief This function handles GPDMA1 Channel 1 global interrupt.
-  */
-void GPDMA1_Channel1_IRQHandler(void)
-{
-  /* USER CODE BEGIN GPDMA1_Channel1_IRQn 0 */
-
-  /* USER CODE END GPDMA1_Channel1_IRQn 0 */
-  HAL_DMA_IRQHandler(&handle_GPDMA1_Channel1);
-  /* USER CODE BEGIN GPDMA1_Channel1_IRQn 1 */
-
-  /* USER CODE END GPDMA1_Channel1_IRQn 1 */
-}
-
-/**
   * @brief This function handles TIM6 global interrupt.
   */
 void TIM6_IRQHandler(void)
@@ -265,6 +236,20 @@ void I2C2_ER_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles USART3 global interrupt.
+  */
+void USART3_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART3_IRQn 0 */
+
+  /* USER CODE END USART3_IRQn 0 */
+  HAL_UART_IRQHandler(&huart3);
+  /* USER CODE BEGIN USART3_IRQn 1 */
+
+  /* USER CODE END USART3_IRQn 1 */
+}
+
+/**
   * @brief This function handles UART4 global interrupt.
   */
 void UART4_IRQHandler(void)
@@ -276,6 +261,20 @@ void UART4_IRQHandler(void)
   /* USER CODE BEGIN UART4_IRQn 1 */
 
   /* USER CODE END UART4_IRQn 1 */
+}
+
+/**
+  * @brief This function handles UART7 global interrupt.
+  */
+void UART7_IRQHandler(void)
+{
+  /* USER CODE BEGIN UART7_IRQn 0 */
+
+  /* USER CODE END UART7_IRQn 0 */
+  HAL_UART_IRQHandler(&huart7);
+  /* USER CODE BEGIN UART7_IRQn 1 */
+
+  /* USER CODE END UART7_IRQn 1 */
 }
 
 /**

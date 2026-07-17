@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * File Name          : app_freertos.h
-  * Description        : FreeRTOS applicative header file
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * File Name          : app_freertos.h
+ * Description        : FreeRTOS applicative header file
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2026 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -54,41 +54,41 @@ extern "C" {
 /* USER CODE BEGIN EM */
 
 /* USER CODE END EM */
-extern osThreadId_t defaultTaskHandle;
-extern osThreadId_t DebugUARTHandle;
-extern osThreadId_t Measure_AnglesHandle;
-extern osThreadId_t Control_MotorsHandle;
-extern osThreadId_t Radio_ControlHandle;
-extern osThreadId_t Mast_ControlHandle;
-extern osMutexId_t PowerConversionDataHandle;
-extern osMutexId_t AngleDataHandle;
-extern osTimerId_t Debug_Blink_OnHandle;
-extern osTimerId_t Debug_Blink_OffHandle;
-extern osMessageQueueId_t PrintMessageQueueHandle;
-extern osEventFlagsId_t I2C1_EventHandle;
-extern osEventFlagsId_t Power_EventHandle;
-extern osEventFlagsId_t UART4_EventHandle;
-extern osEventFlagsId_t I2C2_EventHandle;
-extern osEventFlagsId_t UART8_EventHandle;
-extern osEventFlagsId_t Radio_EventHandle;
-extern osEventFlagsId_t Motor_Control_EventHandle;
+extern osThreadId_t initTaskHandle;
+extern osThreadId_t uartParserTaskHandle;
+extern osThreadId_t heartbeatTaskHandle;
+extern osThreadId_t encoderTaskHandle;
+extern osThreadId_t telemetryTaskHandle;
+extern osThreadId_t rpiTransmitTaskHandle;
+extern osThreadId_t sailMotorTaskHandle;
+extern osMutexId_t debugPrintStringMutexHandle;
+extern osMutexId_t encoderMutexHandle;
+extern osMutexId_t rpiMutexHandle;
+extern osMutexId_t windMutexHandle;
+extern osMutexId_t xbeeMutexHandle;
+extern osMessageQueueId_t uart_rx_queueHandle;
+extern osSemaphoreId_t i2c2_semaphoreHandle;
+extern osSemaphoreId_t radio_tx_semaphoreHandle;
+extern osSemaphoreId_t raspberry_tx_semaphoreHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 
 /* USER CODE END FunctionPrototypes */
 
-extern void StartDefaultTask(void *argument);
-extern void DebugUART(void *argument);
-extern void Measure_Angles(void *argument);
-extern void Control_Motors(void *argument);
-extern void Radio_Control(void *argument);
-extern void Mast_Control(void *argument);
-void Set_LED(void *argument);
-void Clear_LED(void *argument);
+extern void InitTask(void *argument);
+extern void UARTParserTask(void *argument);
+extern void HeartbeatTask(void *argument);
+extern void EncoderTask(void *argument);
+extern void TelemetryTask(void *argument);
+extern void RpiTransmitTask(void *argument);
+extern void SailMotorTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
+/* Hook prototypes */
+void configureTimerForRunTimeStats(void);
+unsigned long getRunTimeCounterValue(void);
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 

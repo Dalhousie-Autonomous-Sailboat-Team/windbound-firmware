@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -69,8 +69,8 @@ void Error_Handler(void);
 #define MPPT1_IN2_GPIO_Port GPIOC
 #define MOTOR4_OUT1_Pin GPIO_PIN_0
 #define MOTOR4_OUT1_GPIO_Port GPIOA
-#define MOTOR2_OUT2_Pin GPIO_PIN_1
-#define MOTOR2_OUT2_GPIO_Port GPIOA
+#define MAST_OUT2_Pin GPIO_PIN_1
+#define MAST_OUT2_GPIO_Port GPIOA
 #define MOTOR4_OUT2_Pin GPIO_PIN_2
 #define MOTOR4_OUT2_GPIO_Port GPIOA
 #define XSENSE_RX_Pin GPIO_PIN_3
@@ -79,10 +79,10 @@ void Error_Handler(void);
 #define RPI_RX_GPIO_Port GPIOE
 #define RPI_TX_Pin GPIO_PIN_8
 #define RPI_TX_GPIO_Port GPIOE
-#define MOTOR1_OUT1_Pin GPIO_PIN_9
-#define MOTOR1_OUT1_GPIO_Port GPIOE
-#define MOTOR1_OUT2_Pin GPIO_PIN_11
-#define MOTOR1_OUT2_GPIO_Port GPIOE
+#define RUDDER_PWR_EN_1_Pin GPIO_PIN_9
+#define RUDDER_PWR_EN_1_GPIO_Port GPIOE
+#define RUDDER_PWR_EN_2_Pin GPIO_PIN_11
+#define RUDDER_PWR_EN_2_GPIO_Port GPIOE
 #define BMS1_TX_Pin GPIO_PIN_13
 #define BMS1_TX_GPIO_Port GPIOB
 #define BEACON_TX_Pin GPIO_PIN_14
@@ -105,14 +105,14 @@ void Error_Handler(void);
 #define DEBUG_LED1_GPIO_Port GPIOA
 #define DEBUG_LED2_Pin GPIO_PIN_9
 #define DEBUG_LED2_GPIO_Port GPIOA
-#define Rudder_PWM_Pin GPIO_PIN_10
-#define Rudder_PWM_GPIO_Port GPIOA
+#define RUDDER_PWM_Pin GPIO_PIN_10
+#define RUDDER_PWM_GPIO_Port GPIOA
 #define GPIO2_Pin GPIO_PIN_11
 #define GPIO2_GPIO_Port GPIOA
 #define GPIO3_Pin GPIO_PIN_12
 #define GPIO3_GPIO_Port GPIOA
-#define MOTOR2_OUT1_Pin GPIO_PIN_15
-#define MOTOR2_OUT1_GPIO_Port GPIOA
+#define MAST_OUT1_Pin GPIO_PIN_15
+#define MAST_OUT1_GPIO_Port GPIOA
 #define GPIO4_Pin GPIO_PIN_10
 #define GPIO4_GPIO_Port GPIOC
 #define RS422_nRE_Pin GPIO_PIN_12
@@ -125,10 +125,10 @@ void Error_Handler(void);
 #define BMS1_RX_GPIO_Port GPIOD
 #define XSENSE_TX_Pin GPIO_PIN_5
 #define XSENSE_TX_GPIO_Port GPIOD
-#define MOTOR3_OUT1_Pin GPIO_PIN_4
-#define MOTOR3_OUT1_GPIO_Port GPIOB
-#define MOTOR3_OUT2_Pin GPIO_PIN_5
-#define MOTOR3_OUT2_GPIO_Port GPIOB
+#define FLAP_OUT1_Pin GPIO_PIN_4
+#define FLAP_OUT1_GPIO_Port GPIOB
+#define FLAP_OUT2_Pin GPIO_PIN_5
+#define FLAP_OUT2_GPIO_Port GPIOB
 #define MPPT1_IN1_Pin GPIO_PIN_7
 #define MPPT1_IN1_GPIO_Port GPIOB
 #define RADIO_RX_Pin GPIO_PIN_0

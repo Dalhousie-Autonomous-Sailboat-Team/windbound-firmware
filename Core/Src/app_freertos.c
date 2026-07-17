@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * File Name          : app_freertos.c
-  * Description        : FreeRTOS applicative file
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * File Name          : app_freertos.c
+ * Description        : FreeRTOS applicative file
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2026 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
@@ -22,8 +22,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "main.h"
-#include "debug.h"
+#include "user_i2c.h"
+#include "user_uart.h"
+#include "L2/app_types.h"
+#include "L3/telemetry.h"
+#include "L2/rpi.h"
+#include "L2/motor_control.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,107 +50,99 @@
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
-/* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
-/* Definitions for DebugUART */
-osThreadId_t DebugUARTHandle;
-const osThreadAttr_t DebugUART_attributes = {
-  .name = "DebugUART",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 256 * 4
-};
-/* Definitions for Measure_Angles */
-osThreadId_t Measure_AnglesHandle;
-const osThreadAttr_t Measure_Angles_attributes = {
-  .name = "Measure_Angles",
-  .priority = (osPriority_t) osPriorityAboveNormal,
-  .stack_size = 256 * 4
-};
-/* Definitions for Control_Motors */
-osThreadId_t Control_MotorsHandle;
-const osThreadAttr_t Control_Motors_attributes = {
-  .name = "Control_Motors",
+/* Definitions for initTask */
+osThreadId_t initTaskHandle;
+const osThreadAttr_t initTask_attributes = {
+  .name = "initTask",
   .priority = (osPriority_t) osPriorityHigh,
   .stack_size = 128 * 4
 };
-/* Definitions for Radio_Control */
-osThreadId_t Radio_ControlHandle;
-const osThreadAttr_t Radio_Control_attributes = {
-  .name = "Radio_Control",
+/* Definitions for uartParserTask */
+osThreadId_t uartParserTaskHandle;
+const osThreadAttr_t uartParserTask_attributes = {
+  .name = "uartParserTask",
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 512 * 4
 };
-/* Definitions for Mast_Control */
-osThreadId_t Mast_ControlHandle;
-const osThreadAttr_t Mast_Control_attributes = {
-  .name = "Mast_Control",
-  .priority = (osPriority_t) osPriorityAboveNormal,
+/* Definitions for heartbeatTask */
+osThreadId_t heartbeatTaskHandle;
+const osThreadAttr_t heartbeatTask_attributes = {
+  .name = "heartbeatTask",
+  .priority = (osPriority_t) osPriorityBelowNormal,
   .stack_size = 128 * 4
 };
-/* Definitions for PowerConversionData */
-osMutexId_t PowerConversionDataHandle;
-const osMutexAttr_t PowerConversionData_attributes = {
-  .name = "PowerConversionData"
+/* Definitions for encoderTask */
+osThreadId_t encoderTaskHandle;
+const osThreadAttr_t encoderTask_attributes = {
+  .name = "encoderTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 256 * 4
 };
-/* Definitions for AngleData */
-osMutexId_t AngleDataHandle;
-const osMutexAttr_t AngleData_attributes = {
-  .name = "AngleData"
+/* Definitions for telemetryTask */
+osThreadId_t telemetryTaskHandle;
+const osThreadAttr_t telemetryTask_attributes = {
+  .name = "telemetryTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 512 * 4
 };
-/* Definitions for Debug_Blink_On */
-osTimerId_t Debug_Blink_OnHandle;
-const osTimerAttr_t Debug_Blink_On_attributes = {
-  .name = "Debug_Blink_On"
+/* Definitions for rpiTransmitTask */
+osThreadId_t rpiTransmitTaskHandle;
+const osThreadAttr_t rpiTransmitTask_attributes = {
+  .name = "rpiTransmitTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
 };
-/* Definitions for Debug_Blink_Off */
-osTimerId_t Debug_Blink_OffHandle;
-const osTimerAttr_t Debug_Blink_Off_attributes = {
-  .name = "Debug_Blink_Off"
+/* Definitions for sailMotorTask */
+osThreadId_t sailMotorTaskHandle;
+const osThreadAttr_t sailMotorTask_attributes = {
+  .name = "sailMotorTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 512 * 4
 };
-/* Definitions for PrintMessageQueue */
-osMessageQueueId_t PrintMessageQueueHandle;
-const osMessageQueueAttr_t PrintMessageQueue_attributes = {
-  .name = "PrintMessageQueue"
+/* Definitions for debugPrintStringMutex */
+osMutexId_t debugPrintStringMutexHandle;
+const osMutexAttr_t debugPrintStringMutex_attributes = {
+  .name = "debugPrintStringMutex"
 };
-/* Definitions for I2C1_Event */
-osEventFlagsId_t I2C1_EventHandle;
-const osEventFlagsAttr_t I2C1_Event_attributes = {
-  .name = "I2C1_Event"
+/* Definitions for encoderMutex */
+osMutexId_t encoderMutexHandle;
+const osMutexAttr_t encoderMutex_attributes = {
+  .name = "encoderMutex"
 };
-/* Definitions for Power_Event */
-osEventFlagsId_t Power_EventHandle;
-const osEventFlagsAttr_t Power_Event_attributes = {
-  .name = "Power_Event"
+/* Definitions for rpiMutex */
+osMutexId_t rpiMutexHandle;
+const osMutexAttr_t rpiMutex_attributes = {
+  .name = "rpiMutex"
 };
-/* Definitions for UART4_Event */
-osEventFlagsId_t UART4_EventHandle;
-const osEventFlagsAttr_t UART4_Event_attributes = {
-  .name = "UART4_Event"
+/* Definitions for windMutex */
+osMutexId_t windMutexHandle;
+const osMutexAttr_t windMutex_attributes = {
+  .name = "windMutex"
 };
-/* Definitions for I2C2_Event */
-osEventFlagsId_t I2C2_EventHandle;
-const osEventFlagsAttr_t I2C2_Event_attributes = {
-  .name = "I2C2_Event"
+/* Definitions for xbeeMutex */
+osMutexId_t xbeeMutexHandle;
+const osMutexAttr_t xbeeMutex_attributes = {
+  .name = "xbeeMutex"
 };
-/* Definitions for UART8_Event */
-osEventFlagsId_t UART8_EventHandle;
-const osEventFlagsAttr_t UART8_Event_attributes = {
-  .name = "UART8_Event"
+/* Definitions for uart_rx_queue */
+osMessageQueueId_t uart_rx_queueHandle;
+const osMessageQueueAttr_t uart_rx_queue_attributes = {
+  .name = "uart_rx_queue"
 };
-/* Definitions for Radio_Event */
-osEventFlagsId_t Radio_EventHandle;
-const osEventFlagsAttr_t Radio_Event_attributes = {
-  .name = "Radio_Event"
+/* Definitions for i2c2_semaphore */
+osSemaphoreId_t i2c2_semaphoreHandle;
+const osSemaphoreAttr_t i2c2_semaphore_attributes = {
+  .name = "i2c2_semaphore"
 };
-/* Definitions for Motor_Control_Event */
-osEventFlagsId_t Motor_Control_EventHandle;
-const osEventFlagsAttr_t Motor_Control_Event_attributes = {
-  .name = "Motor_Control_Event"
+/* Definitions for radio_tx_semaphore */
+osSemaphoreId_t radio_tx_semaphoreHandle;
+const osSemaphoreAttr_t radio_tx_semaphore_attributes = {
+  .name = "radio_tx_semaphore"
+};
+/* Definitions for raspberry_tx_semaphore */
+osSemaphoreId_t raspberry_tx_semaphoreHandle;
+const osSemaphoreAttr_t raspberry_tx_semaphore_attributes = {
+  .name = "raspberry_tx_semaphore"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -153,17 +150,35 @@ const osEventFlagsAttr_t Motor_Control_Event_attributes = {
 
 /* USER CODE END FunctionPrototypes */
 
+/* USER CODE BEGIN 1 */
+/* Functions needed when configGENERATE_RUN_TIME_STATS is on */
+__weak void configureTimerForRunTimeStats(void)
+{
+    /* Enable TRC */
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+
+    /* Reset the cycle counter */
+    DWT->CYCCNT = 0;
+
+    /* Enable the cycle counter */
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
+__weak unsigned long getRunTimeCounterValue(void)
+{
+    return DWT->CYCCNT;
+}
+/* USER CODE END 1 */
+
 /* USER CODE BEGIN PREPOSTSLEEP */
 __weak void PreSleepProcessing(uint32_t ulExpectedIdleTime)
 {
-/* place for user code */
-UNUSED(ulExpectedIdleTime);
+    /* place for user code */
 }
 
 __weak void PostSleepProcessing(uint32_t ulExpectedIdleTime)
 {
-/* place for user code */
-UNUSED(ulExpectedIdleTime);
+    /* place for user code */
 }
 /* USER CODE END PREPOSTSLEEP */
 
@@ -176,96 +191,75 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
-  /* creation of PowerConversionData */
-  PowerConversionDataHandle = osMutexNew(&PowerConversionData_attributes);
+  /* creation of debugPrintStringMutex */
+  debugPrintStringMutexHandle = osMutexNew(&debugPrintStringMutex_attributes);
 
-  /* creation of AngleData */
-  AngleDataHandle = osMutexNew(&AngleData_attributes);
+  /* creation of encoderMutex */
+  encoderMutexHandle = osMutexNew(&encoderMutex_attributes);
+
+  /* creation of rpiMutex */
+  rpiMutexHandle = osMutexNew(&rpiMutex_attributes);
+
+  /* creation of windMutex */
+  windMutexHandle = osMutexNew(&windMutex_attributes);
+
+  /* creation of xbeeMutex */
+  xbeeMutexHandle = osMutexNew(&xbeeMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
+    /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
+  /* creation of i2c2_semaphore */
+  i2c2_semaphoreHandle = osSemaphoreNew(1, 0, &i2c2_semaphore_attributes);
+
+  /* creation of radio_tx_semaphore */
+  radio_tx_semaphoreHandle = osSemaphoreNew(1, 1, &radio_tx_semaphore_attributes);
+
+  /* creation of raspberry_tx_semaphore */
+  raspberry_tx_semaphoreHandle = osSemaphoreNew(1, 1, &raspberry_tx_semaphore_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
+    /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
-  /* creation of Debug_Blink_On */
-  Debug_Blink_OnHandle = osTimerNew(Set_LED, osTimerPeriodic, NULL, &Debug_Blink_On_attributes);
-
-  /* creation of Debug_Blink_Off */
-  Debug_Blink_OffHandle = osTimerNew(Clear_LED, osTimerOnce, NULL, &Debug_Blink_Off_attributes);
 
   /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
+    /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
-  /* creation of PrintMessageQueue */
-  PrintMessageQueueHandle = osMessageQueueNew (16, sizeof(DebugMessage_t), &PrintMessageQueue_attributes);
+  /* creation of uart_rx_queue */
+  uart_rx_queueHandle = osMessageQueueNew (32, sizeof(UART_Char_t), &uart_rx_queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
+    /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  /* creation of initTask */
+  initTaskHandle = osThreadNew(InitTask, NULL, &initTask_attributes);
 
-  /* creation of DebugUART */
-  DebugUARTHandle = osThreadNew(DebugUART, NULL, &DebugUART_attributes);
+  /* creation of uartParserTask */
+  uartParserTaskHandle = osThreadNew(UARTParserTask, NULL, &uartParserTask_attributes);
 
-  /* creation of Measure_Angles */
-  Measure_AnglesHandle = osThreadNew(Measure_Angles, NULL, &Measure_Angles_attributes);
+  /* creation of heartbeatTask */
+  heartbeatTaskHandle = osThreadNew(HeartbeatTask, NULL, &heartbeatTask_attributes);
 
-  /* creation of Control_Motors */
-  Control_MotorsHandle = osThreadNew(Control_Motors, NULL, &Control_Motors_attributes);
+  /* creation of encoderTask */
+  encoderTaskHandle = osThreadNew(EncoderTask, NULL, &encoderTask_attributes);
 
-  /* creation of Radio_Control */
-  Radio_ControlHandle = osThreadNew(Radio_Control, NULL, &Radio_Control_attributes);
+  /* creation of telemetryTask */
+  telemetryTaskHandle = osThreadNew(TelemetryTask, NULL, &telemetryTask_attributes);
 
-  /* creation of Mast_Control */
-  Mast_ControlHandle = osThreadNew(Mast_Control, NULL, &Mast_Control_attributes);
+  /* creation of rpiTransmitTask */
+  rpiTransmitTaskHandle = osThreadNew(RpiTransmitTask, NULL, &rpiTransmitTask_attributes);
+
+  /* creation of sailMotorTask */
+  sailMotorTaskHandle = osThreadNew(SailMotorTask, NULL, &sailMotorTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+    /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
-  /* creation of I2C1_Event */
-  I2C1_EventHandle = osEventFlagsNew(&I2C1_Event_attributes);
-
-  /* creation of Power_Event */
-  Power_EventHandle = osEventFlagsNew(&Power_Event_attributes);
-
-  /* creation of UART4_Event */
-  UART4_EventHandle = osEventFlagsNew(&UART4_Event_attributes);
-
-  /* creation of I2C2_Event */
-  I2C2_EventHandle = osEventFlagsNew(&I2C2_Event_attributes);
-
-  /* creation of UART8_Event */
-  UART8_EventHandle = osEventFlagsNew(&UART8_Event_attributes);
-
-  /* creation of Radio_Event */
-  Radio_EventHandle = osEventFlagsNew(&Radio_Event_attributes);
-
-  /* creation of Motor_Control_Event */
-  Motor_Control_EventHandle = osEventFlagsNew(&Motor_Control_Event_attributes);
-
   /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
+    /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 
-}
-/* Set_LED function */
-__weak void Set_LED(void *argument)
-{
-  /* USER CODE BEGIN Set_LED */
-  UNUSED(argument);
-  /* USER CODE END Set_LED */
-}
-
-/* Clear_LED function */
-__weak void Clear_LED(void *argument)
-{
-  /* USER CODE BEGIN Clear_LED */
-  UNUSED(argument);
-  /* USER CODE END Clear_LED */
 }
 
 /* Private application code --------------------------------------------------*/
