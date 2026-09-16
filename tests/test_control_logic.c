@@ -112,7 +112,7 @@ static void expired_commands_never_drive_sail_motor(void)
     EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
 }
 
-static void fresh_positive_xbee_command_drives_channel_one(void)
+static void fresh_positive_xbee_command_drives_channel_two(void)
 {
     ControlLogicInput_t input = default_input();
     input.xbee.ever_received = true;
@@ -125,12 +125,12 @@ static void fresh_positive_xbee_command_drives_channel_one(void)
     EXPECT_TRUE(output.xbee_valid);
     EXPECT_FALSE(output.rpi_valid);
     EXPECT_FLOAT_NEAR(30.0f, output.target_sail_angle, 0.001f);
-    EXPECT_U16(12800U, output.sail_motor_channel_1_pwm);
-    EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
+    EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(12800U, output.sail_motor_channel_2_pwm);
     EXPECT_U16(1770U, output.rudder_pwm);
 }
 
-static void fresh_negative_xbee_command_drives_channel_two(void)
+static void fresh_negative_xbee_command_drives_channel_one(void)
 {
     ControlLogicInput_t input = default_input();
     input.xbee.ever_received = true;
@@ -140,8 +140,8 @@ static void fresh_negative_xbee_command_drives_channel_two(void)
     ControlLogicOutput_t output = evaluate(&input);
 
     EXPECT_TRUE(output.xbee_valid);
-    EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
-    EXPECT_U16(12800U, output.sail_motor_channel_2_pwm);
+    EXPECT_U16(12800U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
 }
 
 static void xbee_timeout_boundary_falls_back_to_fresh_rpi(void)
@@ -162,8 +162,8 @@ static void xbee_timeout_boundary_falls_back_to_fresh_rpi(void)
     EXPECT_TRUE(output.rpi_valid);
     EXPECT_FLOAT_NEAR(-30.0f, output.target_sail_angle, 0.001f);
     EXPECT_FLOAT_NEAR(10.0f, output.target_rudder_angle, 0.001f);
-    EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
-    EXPECT_U16(12800U, output.sail_motor_channel_2_pwm);
+    EXPECT_U16(12800U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
     EXPECT_U16(1458U, output.rudder_pwm);
 }
 
@@ -203,21 +203,97 @@ static void zero_xbee_values_defer_to_fresh_rpi_values(void)
 
     EXPECT_FLOAT_NEAR(25.0f, output.target_sail_angle, 0.001f);
     EXPECT_FLOAT_NEAR(-45.0f, output.target_rudder_angle, 0.001f);
-    EXPECT_U16(12800U, output.sail_motor_channel_1_pwm);
-    EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
+    EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(12800U, output.sail_motor_channel_2_pwm);
     EXPECT_U16(970U, output.rudder_pwm);
 }
 
-static void sail_error_at_dead_band_boundary_stops_motor(void)
+static void sail_position_dead_band_is_one_degree(void)
 {
     ControlLogicInput_t input = default_input();
     input.xbee.ever_received = true;
     input.xbee.last_updated_ms = 900U;
-    input.xbee.sail_angle = 20.0f;
+    input.xbee.sail_angle = 1.0f;
 
     ControlLogicOutput_t output = evaluate(&input);
 
     EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
+
+    input.xbee.sail_angle = -1.0f;
+    output = evaluate(&input);
+
+    EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
+
+    input.xbee.sail_angle = 2.0f;
+    output = evaluate(&input);
+
+    EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(12800U, output.sail_motor_channel_2_pwm);
+
+    input.xbee.sail_angle = -2.0f;
+    output = evaluate(&input);
+
+    EXPECT_U16(12800U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
+}
+
+static void full_sail_commands_reach_near_end_of_range(void)
+{
+    ControlLogicInput_t input = default_input();
+    input.xbee.ever_received = true;
+    input.xbee.last_updated_ms = 900U;
+
+    input.xbee.sail_angle = 45.0f;
+    input.encoder.angle = 223U;
+    ControlLogicOutput_t output = evaluate(&input);
+    EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(12800U, output.sail_motor_channel_2_pwm);
+
+    input.encoder.angle = 224U;
+    output = evaluate(&input);
+    EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
+
+    input.xbee.sail_angle = -45.0f;
+    input.encoder.angle = 137U;
+    output = evaluate(&input);
+    EXPECT_U16(12800U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
+
+    input.encoder.angle = 136U;
+    output = evaluate(&input);
+    EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
+
+}
+
+static void default_target_at_zero_drives_increasing_angle_channel(void)
+{
+    ControlLogicInput_t input = default_input();
+    input.encoder.angle = 0U;
+    input.xbee.ever_received = true;
+    input.xbee.last_updated_ms = 900U;
+    input.xbee.sail_angle = 0.0f;
+
+    ControlLogicOutput_t output = evaluate(&input);
+
+    EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(12800U, output.sail_motor_channel_2_pwm);
+}
+
+static void default_target_near_wrap_drives_decreasing_angle_channel(void)
+{
+    ControlLogicInput_t input = default_input();
+    input.encoder.angle = 359U;
+    input.xbee.ever_received = true;
+    input.xbee.last_updated_ms = 900U;
+    input.xbee.sail_angle = 0.0f;
+
+    ControlLogicOutput_t output = evaluate(&input);
+
+    EXPECT_U16(12800U, output.sail_motor_channel_1_pwm);
     EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
 }
 
@@ -231,8 +307,8 @@ static void sail_error_uses_shortest_path_across_encoder_wrap(void)
 
     ControlLogicOutput_t output = evaluate(&input);
 
-    EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
-    EXPECT_U16(12800U, output.sail_motor_channel_2_pwm);
+    EXPECT_U16(12800U, output.sail_motor_channel_1_pwm);
+    EXPECT_U16(0U, output.sail_motor_channel_2_pwm);
 }
 
 static void tick_counter_wrap_preserves_recent_xbee_command(void)
@@ -276,18 +352,24 @@ int main(void)
 {
     run_test("no commands never drive sail motor", no_commands_never_drive_sail_motor);
     run_test("expired commands never drive sail motor", expired_commands_never_drive_sail_motor);
-    run_test("fresh positive XBee command drives channel one",
-             fresh_positive_xbee_command_drives_channel_one);
-    run_test("fresh negative XBee command drives channel two",
-             fresh_negative_xbee_command_drives_channel_two);
+    run_test("fresh positive XBee command drives channel two",
+             fresh_positive_xbee_command_drives_channel_two);
+    run_test("fresh negative XBee command drives channel one",
+             fresh_negative_xbee_command_drives_channel_one);
     run_test("XBee timeout boundary falls back to fresh RPi",
              xbee_timeout_boundary_falls_back_to_fresh_rpi);
     run_test("nonzero XBee values override fresh RPi values",
              nonzero_xbee_values_override_fresh_rpi_values);
     run_test("zero XBee values defer to fresh RPi values",
              zero_xbee_values_defer_to_fresh_rpi_values);
-    run_test("sail error at dead-band boundary stops motor",
-             sail_error_at_dead_band_boundary_stops_motor);
+    run_test("sail position dead band is one degree",
+             sail_position_dead_band_is_one_degree);
+    run_test("full sail commands reach near end of range",
+             full_sail_commands_reach_near_end_of_range);
+    run_test("default target at zero drives increasing-angle channel",
+             default_target_at_zero_drives_increasing_angle_channel);
+    run_test("default target near wrap drives decreasing-angle channel",
+             default_target_near_wrap_drives_decreasing_angle_channel);
     run_test("sail error uses shortest path across encoder wrap",
              sail_error_uses_shortest_path_across_encoder_wrap);
     run_test("tick counter wrap preserves recent XBee command",

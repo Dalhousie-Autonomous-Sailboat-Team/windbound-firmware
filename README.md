@@ -23,3 +23,19 @@ Development follows a layered architecture, with hardware-level code in L1, data
   - `Utils/`: Utility source files
 - `build/`: Temporary Build directory
 - `CMakeLists.txt`: Main CMake file - **Add new source files here**
+
+## macOS setup
+
+The project uses ST's Arm Clang toolchain and the STM32Cube VS Code bundle
+manager. After installing the repository prerequisites, activate the embedded
+tools in a terminal with:
+
+```sh
+. tools/stm32-env.sh
+cmake --preset Debug
+cmake --build --preset Debug
+```
+
+The resulting firmware image is `build/Debug/Nautono_V3.elf`. The repository's
+VS Code launch configuration uses the ST-LINK GDB server and can be started
+from the Run and Debug panel after an ST-LINK probe is connected to the target.
