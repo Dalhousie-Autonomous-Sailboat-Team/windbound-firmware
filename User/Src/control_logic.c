@@ -2,8 +2,9 @@
 
 #include <stddef.h>
 
-#define SAIL_DEAD_BAND_DEG 20.0f
+#define SAIL_DEAD_BAND_DEG 4.0f
 #define MOTOR_FULL 12800U
+#define MOTOR_SLOW 11000U
 #define MOTOR_OFF 0U
 
 /* Treat commands as stale after twice their nominal transmission period. */
@@ -109,16 +110,20 @@ void ControlLogic_Evaluate(const ControlLogicInput_t *input, ControlLogicOutput_
         float target_encoder_angle = sail_command_to_encoder_deg(result.target_sail_angle);
         float sail_error = wrap_error(target_encoder_angle - input->encoder.angle);
 
-        /* Bang-bang sail control: drive at full duty outside the dead band. */
+        /*
+         * Bang-bang sail control: drive at full duty outside the dead band.
+         * Assumed installed polarity: channel 2 increases the AS5600 angle,
+         * while channel 1 decreases it.
+         */
         if (sail_error > SAIL_DEAD_BAND_DEG)
         {
-            result.sail_motor_channel_1_pwm = MOTOR_FULL;
-            result.sail_motor_channel_2_pwm = MOTOR_OFF;
+            result.sail_motor_channel_1_pwm = MOTOR_OFF;
+            result.sail_motor_channel_2_pwm = MOTOR_SLOW;
         }
         else if (sail_error < -SAIL_DEAD_BAND_DEG)
         {
-            result.sail_motor_channel_1_pwm = MOTOR_OFF;
-            result.sail_motor_channel_2_pwm = MOTOR_FULL;
+            result.sail_motor_channel_1_pwm = MOTOR_SLOW;
+            result.sail_motor_channel_2_pwm = MOTOR_OFF;
         }
         else
         {

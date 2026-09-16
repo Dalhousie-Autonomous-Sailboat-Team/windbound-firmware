@@ -48,8 +48,8 @@ static void parsed_xbee_command_reaches_actuator_decision(void)
     TEST_EXPECT_TRUE(output.xbee_valid);
     TEST_EXPECT_FLOAT_NEAR(30.0f, output.target_sail_angle, 0.0001f);
     TEST_EXPECT_FLOAT_NEAR(-15.0f, output.target_rudder_angle, 0.0001f);
-    TEST_EXPECT_INT(12800U, output.sail_motor_channel_1_pwm);
-    TEST_EXPECT_INT(0U, output.sail_motor_channel_2_pwm);
+    TEST_EXPECT_INT(0U, output.sail_motor_channel_1_pwm);
+    TEST_EXPECT_INT(12800U, output.sail_motor_channel_2_pwm);
     TEST_EXPECT_INT(1236U, output.rudder_pwm);
 }
 
@@ -83,8 +83,8 @@ static void expired_xbee_command_falls_back_to_parsed_rpi_sample(void)
     TEST_EXPECT_TRUE(output.rpi_valid);
     TEST_EXPECT_FLOAT_NEAR(-30.0f, output.target_sail_angle, 0.0001f);
     TEST_EXPECT_FLOAT_NEAR(10.0f, output.target_rudder_angle, 0.0001f);
-    TEST_EXPECT_INT(0U, output.sail_motor_channel_1_pwm);
-    TEST_EXPECT_INT(12800U, output.sail_motor_channel_2_pwm);
+    TEST_EXPECT_INT(12800U, output.sail_motor_channel_1_pwm);
+    TEST_EXPECT_INT(0U, output.sail_motor_channel_2_pwm);
 }
 
 int main(void)
