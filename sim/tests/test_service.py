@@ -51,7 +51,7 @@ def sim_state(service):
 def test_serves_the_page_and_its_files(service):
     status, page = request(service, "GET", "/")
     assert status == 200 and b'id="view-mission"' in page and b'id="view-helm"' in page
-    for name in ("app.css", "app.js", "scene3d.js"):
+    for name in ("app.css", "app.js", "scene3d.js", "world.js", "boat.js", "favicon.svg"):
         assert request(service, "GET", f"/{name}")[0] == 200
 
 
@@ -119,11 +119,12 @@ def test_refuses_requests_addressed_to_another_name(service):
     ("sim", {"action": "speed", "speed": 1000}),
     ("sim", {"action": "operator", "sail": "x", "rudder": 0}),
     ("sim", {"action": "fault", "name": "gremlins", "on": True}),
+    ("sim", {"action": "autopilot", "period_ms": 1234}),
     ("ground", {"action": "connect"}),
     ("firmware", {"action": "flash"}),
     ("nothing", {"action": "pause"}),
 ], ids=["unknown action", "unknown scenario", "unknown speed", "non-numeric joystick", "unknown fault",
-        "connect without a port", "unknown firmware action", "unknown area"])
+        "odd autopilot period", "connect without a port", "unknown firmware action", "unknown area"])
 def test_rejects_commands_it_cannot_use(service, area, body):
     assert request(service, "POST", f"/api/{area}", body)[0] in (400, 403)
 
@@ -143,7 +144,11 @@ def test_commands_reach_the_simulator(service):
 
     post(action="fault", name="encoder_stuck", on=True)
     post(action="step")
-    wait_for(lambda: "encoder_stuck" in sim_state(service)["state"]["faults"])
+    wait_for(lambda: sim_state(service)["state"]["faults"]["encoder_stuck"])
+
+    post(action="autopilot", period_ms=5000)
+    wait_for(lambda: sim_state(service)["autopilot_period_ms"] == 5000)
+    assert service.runner.sim.params.autopilot.period_ms == 5000
 
     post(action="stop_boat")
     post(action="speed", speed="max")

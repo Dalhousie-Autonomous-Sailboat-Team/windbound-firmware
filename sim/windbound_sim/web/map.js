@@ -13,9 +13,34 @@ const SAMPLE_M = 2;
 const HIT_PX = 14;
 
 const PALETTE = {
-  light: { shallow: [220, 236, 236], deep: [92, 150, 165], plain: [214, 233, 236] },
-  dark: { shallow: [28, 50, 56], deep: [10, 78, 96], plain: [22, 41, 46] },
+  light: { shallow: [214, 233, 234], deep: [86, 146, 162], plain: [212, 231, 234], shoal: [240, 228, 199] },
+  dark: { shallow: [30, 54, 60], deep: [12, 82, 100], plain: [24, 44, 50], shoal: [62, 52, 34] },
 };
+
+/* Line segments (as col, row pairs) where the depth crosses `level` metres:
+   marching squares over the grid, land counting as -1 m, so level 0 traces
+   the shore. Drawn as crisp lines over the smoothed depth image. */
+function contour(lake, level) {
+  const { rows, cols, depth } = lake;
+  const v = (r, c) => { const d = depth[r * cols + c]; return d === null ? -1 : d; };
+  const out = [];
+  const at = (p, q) => (level - p) / (q - p);
+  for (let r = 0; r < rows - 1; r++) {
+    for (let c = 0; c < cols - 1; c++) {
+      const tl = v(r, c), tr = v(r, c + 1), br = v(r + 1, c + 1), bl = v(r + 1, c);
+      const k = (tl >= level ? 8 : 0) | (tr >= level ? 4 : 0) | (br >= level ? 2 : 0) | (bl >= level ? 1 : 0);
+      if (k === 0 || k === 15) continue;
+      const top = [c + at(tl, tr), r], right = [c + 1, r + at(tr, br)];
+      const bottom = [c + at(bl, br), r + 1], left = [c, r + at(tl, bl)];
+      const pairs = { 1: [left, bottom], 14: [left, bottom], 2: [bottom, right], 13: [bottom, right],
+                      3: [left, right], 12: [left, right], 4: [top, right], 11: [top, right],
+                      6: [top, bottom], 9: [top, bottom], 7: [left, top], 8: [left, top],
+                      5: [left, top, bottom, right], 10: [top, right, left, bottom] }[k];
+      for (const point of pairs) out.push(point[0], point[1]);
+    }
+  }
+  return new Float32Array(out);
+}
 
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
@@ -45,6 +70,8 @@ export class LakeMap {
   setLake(lake, draft) {
     this.lake = lake;
     this.draft = draft;
+    this.shore = contour(lake, 0);
+    this.draftLine = contour(lake, draft);
     this.lat0 = (lake.north + lake.south) / 2;
     this.lon0 = (lake.west + lake.east) / 2;
     this.cos0 = Math.cos(this.lat0 * K);
@@ -52,7 +79,7 @@ export class LakeMap {
     this.paintDepth();
     this.resize();
   }
-  setTheme(name) { this.theme = name; this.paintDepth(); this.draw(); }
+  setTheme(name) { this.theme = name; this.chartKey = null; this.paintDepth(); this.draw(); }
   setBase(base) { this.base = base; this.paintDepth(); this.draw(); }
   setRoute(route, active, reached) { this.route = route; this.active = active; this.reached = reached; this.draw(); }
   setTrack(track) { this.track = track; this.draw(); }
@@ -140,7 +167,7 @@ export class LakeMap {
       const d = l.depth[i];
       if (d === null) continue;                           // land: the map's background shows
       const t = this.base === "plain" ? null : Math.pow(Math.min(d / 6.5, 1), 0.75);
-      const rgb = t === null ? p.plain : p.shallow.map((s, k) => s + (p.deep[k] - s) * t);
+      const rgb = t === null ? p.plain : d < this.draft ? p.shoal : p.shallow.map((s, k) => s + (p.deep[k] - s) * t);
       data.data.set([rgb[0], rgb[1], rgb[2], 255], i * 4);
     }
     ctx.putImageData(data, 0, 0);
@@ -151,7 +178,7 @@ export class LakeMap {
     const rect = this.container.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.w = rect.width; this.h = rect.height;
+    this.w = rect.width; this.h = rect.height; this.dpr = dpr;
     this.canvas.width = Math.round(rect.width * dpr);
     this.canvas.height = Math.round(rect.height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -164,14 +191,53 @@ export class LakeMap {
     if (!this.w) return;
     ctx.clearRect(0, 0, this.w, this.h);
     if (!this.lake || !this.view) return;
-    const l = this.lake;
-    const [ax, ay] = this.toScreen(l.north, l.west), [bx, by] = this.toScreen(l.south, l.east);
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(this.depthImage, ax, ay, bx - ax, by - ay);
+    ctx.drawImage(this.chart(), 0, 0, this.w, this.h);
     this.drawTrack();
     this.drawRoute();
     this.drawBoat();
     this.drawScale();
+  }
+
+  /* The lake itself (depth shading, shoreline, draft line) changes only when
+     the view, the size, the theme or the shading does, so it is drawn once
+     into its own canvas and copied under the moving parts. */
+  chart() {
+    const v = this.view;
+    const key = [this.w, this.h, this.dpr, v.cx, v.cy, v.scale, this.theme, this.base, this.depthImage?.width].join();
+    if (this.chartKey === key) return this.chartCanvas;
+    this.chartKey = key;
+    const canvas = this.chartCanvas ??= document.createElement("canvas");
+    canvas.width = Math.round(this.w * this.dpr);
+    canvas.height = Math.round(this.h * this.dpr);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.clearRect(0, 0, this.w, this.h);
+    const l = this.lake;
+    const [ax, ay] = this.toScreen(l.north, l.west), [bx, by] = this.toScreen(l.south, l.east);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.depthImage, ax, ay, bx - ax, by - ay);
+    if (this.base !== "plain") this.drawLines(ctx, this.draftLine, css("--caution"), 1, 0.75, ax, ay, bx, by);
+    this.drawLines(ctx, this.shore, css("--muted"), 1.25, 0.9, ax, ay, bx, by);
+    return canvas;
+  }
+
+  /* Contour segments from grid units to the screen: the grid's corners map
+     linearly onto the screen box (ax, ay)-(bx, by). */
+  drawLines(ctx, segments, colour, width, alpha, ax, ay, bx, by) {
+    const l = this.lake;
+    const sx = (bx - ax) / (l.cols - 1), sy = (by - ay) / (l.rows - 1);
+    ctx.save();
+    ctx.strokeStyle = colour;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    for (let i = 0; i < segments.length; i += 4) {
+      ctx.moveTo(ax + segments[i] * sx, ay + segments[i + 1] * sy);
+      ctx.lineTo(ax + segments[i + 2] * sx, ay + segments[i + 3] * sy);
+    }
+    ctx.stroke();
+    ctx.restore();
   }
 
   drawTrack() {

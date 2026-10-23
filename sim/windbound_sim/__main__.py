@@ -76,15 +76,16 @@ def main(argv=None):
         speed = args.speed if args.speed == "max" else int(args.speed)
         service = WindboundService(load(args), args.scenario, speed, port=args.port,
                                    link_port=args.link_port or None, model_path=args.model)
-        print(f"Windbound: {service.url}")
+        print(f"\n  Windbound is running at {service.url}")
         if service.tcp_link:
-            print(f"Desktop ground station: connect to {service.tcp_link.url}")
+            print(f"  Desktop ground station: connect it to {service.tcp_link.url}")
+        print("  Press Ctrl+C to stop.\n", flush=True)
         if not args.no_open:
             webbrowser.open(service.url)
         try:
             service.serve_forever()
         except KeyboardInterrupt:
-            print("\nStopped.")
+            print("\n  Stopped.")
         finally:
             service.close()
         return 0

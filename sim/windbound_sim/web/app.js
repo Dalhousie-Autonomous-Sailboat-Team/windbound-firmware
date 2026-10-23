@@ -40,6 +40,20 @@ export function toast(text, ms = 4500) {
   toastTimer = setTimeout(() => { el.hidden = true; }, ms);
 }
 
+/* ----- sliders ---------------------------------------------------------- */
+/* Range inputs draw their filled part from a custom property: from zero on
+   a slider that runs either side of zero (sail, rudder), else from its
+   minimum. Call after setting a slider's value from code. */
+export function paintRange(input) {
+  const min = Number(input.min || 0), max = Number(input.max || 100), value = Number(input.value);
+  const at = (x) => `${(((x - min) / (max - min)) * 100).toFixed(2)}%`;
+  const origin = min < 0 && max > 0 ? 0 : min;
+  input.style.setProperty("--lo", at(Math.min(origin, value)));
+  input.style.setProperty("--hi", at(Math.max(origin, value)));
+}
+document.addEventListener("input", (event) => { if (event.target.matches?.('input[type="range"]')) paintRange(event.target); });
+for (const input of document.querySelectorAll('input[type="range"]')) paintRange(input);
+
 /* ----- theme ------------------------------------------------------------ */
 const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 export const theme = () => document.documentElement.dataset.theme || (darkQuery.matches ? "dark" : "light");
@@ -156,7 +170,17 @@ for (const opener of document.querySelectorAll("[data-open-connection]")) {
 document.addEventListener("click", (event) => {
   if (!popover.hidden && !popover.contains(event.target)) popover.hidden = true;
 });
-document.addEventListener("keydown", (event) => { if (event.key === "Escape") { popover.hidden = true; closeNav(); } });
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") { popover.hidden = true; closeNav(); }
+  if (event.key === "?" && !event.target.closest?.("input, select, textarea")) { event.preventDefault(); openKeys(); }
+});
+
+/* ----- keyboard shortcuts ------------------------------------------------- */
+const shortcuts = $("shortcuts");
+function openKeys() { if (!shortcuts.open) shortcuts.showModal(); }
+$("shortcuts-open").addEventListener("click", openKeys);
+$("shortcuts-close").addEventListener("click", () => shortcuts.close());
+shortcuts.addEventListener("click", (event) => { if (event.target === shortcuts) shortcuts.close(); });   // the backdrop
 
 function showSource(ground) {
   const source = ground.source;
@@ -201,8 +225,19 @@ function disarm() {
 }
 
 /* ----- the stream ------------------------------------------------------- */
+/* If the service stops, the page says so and keeps trying; when it is back,
+   the stream starts over with a fresh hello. */
+let online = true;
+function setOnline(now) {
+  if (now === online) return;
+  online = now;
+  $("offline").hidden = now;
+  document.body.classList.toggle("offline", !now);
+  if (now) toast("Reconnected to the Windbound service.", 3000);
+}
 function connectStream() {
   const stream = new EventSource("/api/stream");
+  stream.onopen = () => setOnline(true);
   stream.addEventListener("hello", (event) => {
     store.hello = JSON.parse(event.data);
     $("side-note").textContent = store.hello.link_port
@@ -224,7 +259,11 @@ function connectStream() {
     store.proof = JSON.parse(event.data);
     emit("proof", store.proof);
   });
-  stream.onerror = () => { $("conn-dot").className = "dot bad"; };
+  stream.onerror = () => {
+    $("conn-dot").className = "dot bad";
+    setOnline(false);
+    if (stream.readyState === EventSource.CLOSED) setTimeout(connectStream, 2000);
+  };
 }
 
 showTheme();

@@ -6,6 +6,14 @@ This revision is based around the STM32H573 microcontroller, and runs FreeRTOS. 
 
 Development follows a layered architecture, with hardware-level code in L1, data-level code in L2, abstraction-level code in L3, and application-level code in L4. See the Project Structure section below for more details. Code is written in C using CMSIS OS2 for RTOS functionality and STM32 HAL for hardware drivers.
 
+## Try it without the boat
+
+```bash
+python3 sim/start.py
+```
+
+opens the simulator and ground station in your browser: this firmware sailing a simulated Windbound on Lake Micmac, the joystick's GUI, and a button that rebuilds the firmware and runs every test against it. See [sim/README.md](sim/README.md) for what to install first and a five-minute tour.
+
 ## Project Structure
 
 - `cmake/`: CubeMX generated CMake files

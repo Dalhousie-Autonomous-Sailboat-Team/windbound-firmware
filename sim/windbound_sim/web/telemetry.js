@@ -6,7 +6,9 @@ import { on, section, store } from "/app.js";
 import { timeOfDay } from "/format.js";
 
 const $ = (id) => document.getElementById(id);
-const LOG_LIMIT = 500;
+const LOG_LIMIT = 500;          // lines kept for the download
+const SHOWN_LIMIT = 300;        // lines on the page
+const FLUSH_MS = 250;           // the page takes new lines four times a second
 
 /* The fields TelemetryTask sends, in order (parsing.py's TELEMETRY_FIELDS), and
    what the firmware does to each before it goes on the radio. */
@@ -27,6 +29,10 @@ const FIELDS = [
 let filter = "all";
 let paused = false;
 const lines = [];
+let pending = [];               // lines waiting for the next flush
+let flushTimer = null;
+
+const setText = (node, value) => { if (node.textContent !== value) node.textContent = value; };
 
 export function initTelemetry() {
   $("packet-rows").replaceChildren(...FIELDS.map(([key, label, unit, note]) => {
@@ -53,30 +59,39 @@ export function initTelemetry() {
   });
   $("log-download").addEventListener("click", download);
   on("ground", (ground) => {
-    if (ground.lines.length && ground.lines[0][0] <= (lines[lines.length - 1]?.[0] ?? 0)) lines.length = 0;
+    if (ground.lines.length && ground.lines[0][0] <= (lines[lines.length - 1]?.[0] ?? 0)) { lines.length = 0; pending = []; }
     lines.push(...ground.lines);
     if (lines.length > LOG_LIMIT) lines.splice(0, lines.length - LOG_LIMIT);
     if (section !== "telemetry") return;
-    showPacket(ground);
-    if (!paused) appendLog(ground.lines);
+    pending.push(...ground.lines);
+    // Lines arrive up to 30 times a second; drawing them in batches keeps the
+    // page from laying out the log on every one.
+    flushTimer ??= setTimeout(flush, FLUSH_MS);
   });
   on("section", (name) => {
-    if (name === "telemetry" && store.ground) { showPacket(store.ground); redrawLog(); }
+    if (name === "telemetry" && store.ground) { pending = []; showPacket(store.ground); redrawLog(); }
   });
+}
+
+function flush() {
+  flushTimer = null;
+  if (section !== "telemetry" || !store.ground) return;
+  showPacket(store.ground);
+  if (!paused) appendLog(pending);
+  pending = [];
 }
 
 function showPacket(ground) {
   const t = ground.telemetry;
-  for (const [key, , unit] of FIELDS) {
-    $(`tv-${key}`).textContent = key in t ? `${t[key]}${unit}` : "—";
-  }
+  for (const [key, , unit] of FIELDS) setText($(`tv-${key}`), key in t ? `${t[key]}${unit}` : "—");
   const source = ground.source.kind === "sim" ? "from the simulator" : `on ${ground.source.name}`;
-  $("tel-sub").textContent = ground.packets
+  setText($("tel-sub"), ground.packets
     ? `Packet ${ground.packets.toLocaleString()}, ${source}. The boat sends one a second.`
-    : `No packet yet ${source}. The boat sends one a second.`;
-  $("packet-meta").textContent = ground.telemetry_age_s === null ? "" : `${ground.telemetry_age_s.toFixed(1)} s ago`;
-  const last = [...lines].reverse().find(([, , text]) => text.includes("XBee RX"));
-  $("packet-raw").textContent = last ? last[2] : "";
+    : `No packet yet ${source}. The boat sends one a second.`);
+  const age = ground.telemetry_age_s === null ? null : ground.telemetry_age_s + (performance.now() - store.groundAt) / 1000;
+  setText($("packet-meta"), age === null ? "" : `${age.toFixed(1)} s ago`);
+  const last = lines.findLast(([, , text]) => text.includes("XBee RX"));
+  setText($("packet-raw"), last ? last[2] : "");
 }
 
 const kindOf = (text) => (text.includes("XBee RX") ? "telemetry" : "controller");
@@ -96,12 +111,14 @@ function lineNode([, at, text]) {
 }
 
 function appendLog(newLines) {
+  const shown = newLines.filter(([, , text]) => keep(text)).slice(-SHOWN_LIMIT);
+  if (!shown.length) return;
   const log = $("log");
   const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
-  log.append(...newLines.filter(([, , text]) => keep(text)).map(lineNode));
-  while (log.childNodes.length > LOG_LIMIT) log.firstChild.remove();
+  log.append(...shown.map(lineNode));
+  for (let extra = log.childNodes.length - SHOWN_LIMIT; extra > 0; extra--) log.firstChild.remove();
   if (atBottom) log.scrollTop = log.scrollHeight;
-  $("log-count").textContent = `${log.childNodes.length} lines shown`;
+  setText($("log-count"), `${log.childNodes.length} lines shown`);
 }
 
 function redrawLog() {

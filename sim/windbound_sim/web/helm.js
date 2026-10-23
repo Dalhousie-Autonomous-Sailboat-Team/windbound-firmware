@@ -6,7 +6,7 @@
  * firmware decided (the simulator reports it), so "Boat uses" and the link
  * ages are exact; with a real controller those wait for telemetry v2.
  */
-import { command, on, section, store, theme, toast } from "/app.js";
+import { command, on, paintRange, section, store, theme, toast } from "/app.js";
 import { LakeMap } from "/map.js";
 import { SOURCE_NAMES, age, bearing, latlon, metres, pointOfSail, signed, windSide, wrap180 } from "/format.js";
 
@@ -84,7 +84,7 @@ function bindControls() {
     });
   }
   document.addEventListener("keydown", (event) => {
-    if (section !== "helm" || event.target.closest("input[type=text], select, textarea")) return;
+    if (section !== "helm" || event.target.closest?.("input[type=text], select, textarea")) return;
     const step = event.shiftKey ? 5 : 1;
     const keys = { w: ["sail", step], s: ["sail", -step], d: ["rudder", step], a: ["rudder", -step] };
     const key = event.key.toLowerCase();
@@ -96,6 +96,7 @@ function bindControls() {
     const limit = axis === "sail" ? 90 : 45;
     command_[axis] = Math.max(-limit, Math.min(limit, command_[axis] + delta));
     $(axis).value = command_[axis];
+    paintRange($(axis));
     showCommand();
     queueSend();
   });
@@ -157,6 +158,7 @@ function startGamepad() {
       if (helmSource === "laptop" && (sail !== command_.sail || rudder !== command_.rudder)) {
         command_ = { sail, rudder };
         $("sail").value = sail; $("rudder").value = rudder;
+        paintRange($("sail")); paintRange($("rudder"));
         showCommand();
         queueSend();
       }
@@ -342,6 +344,7 @@ function showCommand() {
       : status ? { sail: status.sail, rudder: status.rudder } : null;
   if (helmSource !== "laptop" && sent) {
     $("sail").value = sent.sail; $("rudder").value = sent.rudder;
+    paintRange($("sail")); paintRange($("rudder"));
   }
   const shown = helmSource === "laptop" ? command_ : sent || { sail: 0, rudder: 0 };
   $("sail-out").textContent = `${signed(shown.sail, 0)}°`;

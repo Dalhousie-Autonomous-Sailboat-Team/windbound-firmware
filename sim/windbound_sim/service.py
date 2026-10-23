@@ -41,7 +41,7 @@ DEFAULT_MODEL_PATH = Path(__file__).resolve().parents[1] / "models" / "boat.glb"
 DEFAULT_PORT = 8765
 MAP_LAKE = "Lake_Micmac"
 STREAM_HZ = 30
-SCENE_CELL_M = 8.0
+SCENE_CELL_M = 12.0
 MAP_CELL_M = 4.0
 MAX_BODY = 64 * 1024
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",

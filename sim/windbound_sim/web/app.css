@@ -68,6 +68,7 @@ html { background: var(--frame); }
 body {
   margin: 0; min-height: 100vh; background: var(--frame); color: var(--text);
   font: 400 14px/20px var(--font); -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;      /* every figure keeps its width as it updates */
 }
 h1, h2, h3, p, ul, ol, dl, dd, figure { margin: 0; }
 ul, ol { padding: 0; list-style: none; }
@@ -139,7 +140,18 @@ button { cursor: pointer; }
 .seg.theme button { width: 30px; padding: 0; display: grid; place-items: center; }
 .seg.theme svg { width: 16px; height: 16px; }
 kbd { display: inline-block; min-width: 20px; padding: 0 5px; border: 1px solid var(--control); border-radius: 4px; font: 500 12px/18px var(--font); text-align: center; color: var(--text); background: var(--surface); }
-input[type="range"] { width: 100%; height: 24px; margin: 0; accent-color: var(--text); }
+/* Sliders: a 4px track, filled in ink between --lo and --hi (set by paintRange).
+   The hard-stop gradient is the fill itself, two flat colours, not a blend.  taste-skill-ignore */
+input[type="range"] { --lo: 0%; --hi: 0%; -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 0; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: linear-gradient(to right, var(--active) var(--lo), var(--text) var(--lo), var(--text) var(--hi), var(--active) var(--hi)); }  /* taste-skill-ignore */
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 999px; background: linear-gradient(to right, var(--active) var(--lo), var(--text) var(--lo), var(--text) var(--hi), var(--active) var(--hi)); }  /* taste-skill-ignore */
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--surface); border: 1.5px solid var(--text); transition: transform .12s ease; }
+input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border-radius: 50%; background: var(--surface); border: 1.5px solid var(--text); }
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.12); }
+input[type="range"]:focus-visible { outline: none; }
+input[type="range"]:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type="range"]:disabled { cursor: not-allowed; opacity: .55; }
 .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 500; background: var(--pill-neutral-bg); color: var(--pill-neutral-ink); white-space: nowrap; flex: none; font-variant-numeric: tabular-nums; }
 .pill.pos { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
 .pill.neg { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
@@ -156,6 +168,7 @@ input[type="range"] { width: 100%; height: 24px; margin: 0; accent-color: var(--
 .stop-outline { fill: none; stroke: #ffffff; stroke-width: 2.2; stroke-linejoin: round; }
 .stop-bar { stroke: #ffffff; stroke-width: 2.6; stroke-linecap: round; }
 a.link { color: var(--accent); text-decoration: none; }
+a.btn { color: inherit; text-decoration: none; }
 a.link:hover { text-decoration: underline; }
 
 /* ----- title row and strip ------------------------------------------------ */
@@ -183,6 +196,9 @@ a.link:hover { text-decoration: underline; }
 .cols { display: grid; grid-template-columns: minmax(0, 1fr) 384px; gap: var(--gap); align-items: stretch; }
 .cols.tel { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
 .cols.top { align-items: start; }
+.panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding: 14px 20px 16px; border-top: 1px solid var(--rule); }
+.panel-foot .hint.bad { color: var(--negative); }
+.sub-head { padding: 14px 20px 2px; font-size: 14px; line-height: 20px; font-weight: 600; border-top: 1px solid var(--rule); }
 .stack { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
 .panel { border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); min-width: 0; }
 .panel.fill { display: flex; flex-direction: column; }
@@ -304,18 +320,26 @@ tr.group td { height: 36px; padding-top: 14px; font-weight: 600; color: var(--te
 td.why-cell { color: var(--muted); font-size: 13px; line-height: 18px; white-space: pre-wrap; max-width: 60ch; }
 .results .pill { min-width: 88px; justify-content: center; }
 
-/* ----- mission control: the 3D stage -------------------------------------- */
-.stage { position: relative; min-height: 560px; overflow: hidden; border-top: 1px solid var(--border); background: var(--map-land); border-radius: 0 0 var(--radius-card) var(--radius-card); }
+/* ----- mission control: the run panel ------------------------------------- */
+/* The 3D stage, the transport and the timeline are one panel, and that panel
+   is what goes full screen. It stretches to the Firmware panel beside it;
+   the stage takes up the difference. */
+.cols.mission { align-items: stretch; }
+.panel.run { display: flex; flex-direction: column; overflow: hidden; }
+.stage { position: relative; flex: 1; min-height: 460px; overflow: hidden; border-top: 1px solid var(--border); background: var(--map-land); }
 .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 .labels3d { position: absolute; inset: 0; pointer-events: none; }
 .tag3d { font: 600 12px/1 var(--font); font-variant-numeric: tabular-nums; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 3px 6px; white-space: nowrap; }
-.tag3d.next { border-color: var(--accent); }
+.tag3d.next { border-color: var(--accent); color: var(--accent); }
 .tag3d.done { color: var(--faint); }
 .tag3d.vec { font-weight: 500; }
-.tag3d.vec b { font-weight: 600; }
-.boat-marker svg { display: block; width: 18px; height: 18px; }
+.boat-marker svg { display: block; width: 20px; height: 20px; }
 .boat-marker path { fill: var(--text); stroke: var(--surface); stroke-width: 1.5; stroke-linejoin: round; }
-.vec-legend { left: 12px; top: 12px; display: grid; gap: 4px; min-width: 190px; }
+.stage-note { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+
+/* Cards over the 3D view: opaque, so they read on any sky. */
+.hud-card { position: absolute; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); }
+.vec-legend { left: 12px; top: 12px; display: grid; gap: 4px; min-width: 196px; padding: 10px 12px; }
 .vec-legend div { display: flex; align-items: center; justify-content: space-between; gap: 14px; color: var(--muted); font-size: 12px; line-height: 18px; }
 .vec-legend span { display: inline-flex; align-items: center; gap: 8px; }
 .vec-legend i { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
@@ -325,16 +349,89 @@ td.why-cell { color: var(--muted); font-size: 13px; line-height: 18px; white-spa
 .sw-hydro { background: var(--caution); }
 .sw-net { background: var(--text); }
 .sw-wind { background: var(--muted); }
-.nav-panel { position: absolute; left: 12px; bottom: 12px; display: flex; align-items: center; gap: 18px; padding: 12px 18px 12px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); max-width: calc(100% - 24px); }
-.compass { width: 88px; height: 88px; flex: none; overflow: visible; }
+.nav-panel { left: 12px; bottom: 12px; display: flex; align-items: center; gap: 14px; padding: 8px 14px 8px 8px; max-width: calc(100% - 24px); }
+.compass { width: 64px; height: 64px; flex: none; overflow: visible; }
 .mini { display: grid; grid-template-columns: repeat(5, auto); }
-.mini > div { padding: 0 14px; border-left: 1px solid var(--rule); }
+.mini > div { padding: 0 12px; border-left: 1px solid var(--rule); }
 .mini > div:first-child { padding-left: 0; border-left: 0; }
 .mini dt { color: var(--muted); font-size: 12px; line-height: 16px; }
-.mini dd { font-size: 20px; line-height: 28px; font-weight: 500; white-space: nowrap; }
+.mini dd { font-size: 18px; line-height: 24px; font-weight: 500; white-space: nowrap; }
 .mini small { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 2px; }
 .toast3d { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); padding: 8px 14px; border-radius: var(--radius-card); background: var(--surface); border: 1px solid var(--border); font-weight: 500; white-space: nowrap; }
 .toast3d.alert { color: var(--negative); border-color: var(--negative); }
+
+/* The transport: run controls over the timeline of who had control. */
+.transport { padding: 12px 20px 14px; border-top: 1px solid var(--border); background: var(--surface); }
+.transport-row { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
+.transport #sim-pause { min-width: 104px; }
+.clock { margin-left: 6px; color: var(--muted); white-space: nowrap; }
+.clock b { color: var(--text); font-weight: 500; font-size: 16px; }
+.sim-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; line-height: 16px; color: var(--muted); }
+.sim-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sim-legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+.sw-xbee, .seg-xbee { background: var(--text); }
+.sw-rpi, .seg-rpi { background: var(--accent); }
+.sw-none, .seg-none { background: var(--pill-negative-bg); outline: 1.5px solid var(--negative); outline-offset: -1.5px; }
+.lanes { --name: 52px; margin-top: 14px; }
+.lanes-head { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 16px; flex-wrap: wrap; margin-bottom: 8px; }
+.lanes-title { font-size: 13px; font-weight: 500; }
+.lane-rows { position: relative; }
+.lane { display: grid; grid-template-columns: var(--name) minmax(0, 1fr); align-items: center; height: 16px; }
+.lane + .lane { margin-top: 6px; }
+.lane-name { font-size: 12px; color: var(--muted); }
+.lane-track { position: relative; height: 12px; border-radius: 3px; background: var(--raised); outline: 1px solid var(--rule); outline-offset: -1px; }
+.lane-track .seg { position: absolute; top: 0; bottom: 0; min-width: 2px; border-radius: 2px; }
+.lane-axis { height: 16px; }
+.lane-axis .lane-track { height: 16px; background: none; outline: 0; }
+.lane-axis .lane-track span { position: absolute; top: 2px; transform: translateX(-50%); font-size: 12px; line-height: 14px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lane-axis .lane-track span.first { transform: none; }
+.lane-axis .lane-track span.last { transform: translateX(-100%); }
+.lane-overlay { position: absolute; left: var(--name); right: 0; top: 0; height: 38px; pointer-events: none; }
+.playhead { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--text); outline: 2px solid var(--surface); }
+
+/* The Firmware panel: the sail, the rudder and the links, as one panel. */
+.fw-part { padding: 2px 20px 14px; }
+.fw-part + .fw-part { border-top: 1px solid var(--rule); padding-top: 10px; }
+.fw-part-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
+.fw-part h3 { font-size: 14px; line-height: 20px; font-weight: 600; }
+.fw-part-head .heads { display: inline-flex; gap: 6px; }
+.firmware .why { margin: 6px 0 2px; }
+.firmware .dial { width: auto; max-width: 100%; height: 112px; margin: 2px auto 6px; }
+.firmware .bar { margin: 2px 0 6px; }
+.firmware .links .rows > li { min-height: 44px; padding: 5px 0; }
+.firmware .legend-table td, .firmware .legend-table th { height: 24px; }
+a.link.bad, .meta.bad { color: var(--negative); }
+
+/* Under the run: this run's checks beside the conditions it runs in. The
+   checks panel stretches to match, its footer (the full suite) at the foot. */
+.cols.tests { align-items: stretch; }
+.run-checks { display: flex; flex-direction: column; }
+.conditions .faults > li { min-height: 46px; }
+.run-checks .checks > li { min-height: 58px; }
+
+/* Conditions: the wind sliders, then the autopilot's rate. */
+.cond-row { display: flex; align-items: center; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap; padding: 12px 20px 14px; border-top: 1px solid var(--rule); }
+.cond-row .k { font-weight: 500; }
+.cond-row .hint { flex-basis: 100%; }
+.cond-row .hint:empty { display: none; }
+
+/* Full screen: the run panel fills the screen; the Firmware panel's essentials
+   ride on the view. Browsers without element full screen get .expanded. */
+.fs-only { display: none; }
+.run:is(:fullscreen, .expanded) { position: fixed; inset: 0; z-index: 60; width: 100vw; height: 100vh; max-width: none; border: 0; border-radius: 0; }
+.run:is(:fullscreen, .expanded) .stage { min-height: 0; }
+.run:is(:fullscreen, .expanded) #view3d-meta { display: none; }
+.run:is(:fullscreen, .expanded) #run-finding { display: inline; }
+.run:is(:fullscreen, .expanded) .fs-hud { display: grid; }
+.run::backdrop { background: var(--surface); }
+body.run-expanded { overflow: hidden; }
+.fs-hud { right: 12px; top: 12px; gap: 6px; min-width: 300px; padding: 10px 14px; }
+.fs-row { display: grid; grid-template-columns: 72px auto minmax(0, 1fr); align-items: center; gap: 10px; font-size: 13px; line-height: 20px; }
+.fs-row .k { color: var(--muted); }
+.fs-row b { font-weight: 500; text-align: right; white-space: nowrap; }
+.fs-row .v { grid-column: 2 / -1; text-align: right; }
+#run-finding.alert { color: var(--negative); }
+#view3d-meta:empty { display: none; }
 
 /* charts: dial, rudder bar, compass, lanes */
 .dial, .bar { display: block; width: 100%; height: auto; overflow: visible; }
@@ -357,23 +454,17 @@ td.why-cell { color: var(--muted); font-size: 13px; line-height: 18px; white-spa
 .legend-table td:first-child { width: 32px; }
 .legend-table th { text-align: left; font-weight: 400; font-size: 14px; color: var(--muted); }
 .legend-table td:last-child { text-align: right; font-weight: 500; white-space: nowrap; }
-.timeline { padding: 4px 20px 12px; }
-.lanes { width: 100%; height: auto; display: block; }
-.lanes text { font: 400 12px var(--font); fill: var(--muted); font-variant-numeric: tabular-nums; }
-.lanes .now { stroke: var(--text); stroke-width: 1.5; }
-.lanes .now-label { fill: var(--text); font-weight: 500; }
-.lanes .axis-line { stroke: var(--grid); stroke-width: 1; }
-.seg-xbee { fill: var(--text); }
-.seg-rpi { fill: var(--accent); }
-.seg-none { fill: none; stroke: var(--negative); stroke-width: 1.5; stroke-dasharray: 4 3; }
-.sim-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 0 20px 14px; font-size: 13px; color: var(--muted); }
-.sim-legend span { display: inline-flex; align-items: center; gap: 8px; }
-.sim-legend i { display: inline-block; width: 18px; height: 10px; border-radius: 3px; }
-.sw-xbee { background: var(--text); }
-.sw-rpi { background: var(--accent); }
-.sw-none { border: 1.5px dashed var(--negative); }
 
-/* ----- popover and toast -------------------------------------------------- */
+/* ----- popover, shortcuts and toast ----------------------------------------- */
+.offline-pill { margin-left: 4px; }
+.shortcuts { width: min(640px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--float-shadow); }
+.shortcuts::backdrop { background: rgba(0, 0, 0, .35); }
+.shortcuts > header { display: flex; align-items: center; justify-content: space-between; padding: 14px 12px 6px 20px; }
+.shortcuts h2 { font-size: 16px; font-weight: 600; }
+.shortcuts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 24px; padding: 4px 20px 20px; }
+.shortcuts h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 8px 0 6px; }
+.shortcuts dl > div { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 4px 0; }
+.shortcuts dd { color: var(--muted); font-size: 13px; line-height: 18px; }
 .popover { position: fixed; z-index: 30; top: 52px; width: 360px; max-width: calc(100vw - 24px); padding: 16px 0 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--float-shadow); }
 .popover h2 { font-size: 14px; font-weight: 600; padding: 0 16px 8px; }
 .choices > li { min-height: 44px; padding: 0 8px; }
@@ -408,6 +499,13 @@ td.why-cell { color: var(--muted); font-size: 13px; line-height: 18px; white-spa
   .strip .cell:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 @media (min-width: 1101px) { .topbar .menu, .topbar .brand-sm { display: none; } }
+@media (max-width: 1100px) and (min-width: 761px) {
+  /* One column of panels: the sail and the rudder sit side by side, so their
+     gauges keep their size instead of stretching across the panel. */
+  .firmware { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .firmware > header, .firmware .links { grid-column: 1 / -1; }
+  .firmware .fw-part:nth-child(3) { border-top: 0; border-left: 1px solid var(--rule); padding-top: 2px; }
+}
 @media (max-width: 760px) {
   .sheet { margin: 0; border-radius: 0; border-width: 1px 0 0; padding: 16px; }
   .view { gap: 16px; }

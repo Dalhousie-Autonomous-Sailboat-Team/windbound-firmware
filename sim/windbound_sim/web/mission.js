@@ -1,9 +1,13 @@
 /*
- * Mission control: run the simulator, watch the boat in 3D, see what the
- * firmware believes and which link it obeys, change the wind, inject faults,
- * and follow this run's checks.
+ * Mission control: run the simulator, watch the boat in 3D (full screen if
+ * you like), see what the firmware believes and which link it obeys, change
+ * the wind and the autopilot's rate, inject faults, and follow this run's
+ * checks.
+ *
+ * Keys (when no field has focus): Space pause or resume, . step one control
+ * tick, F full screen, 1 2 3 orbit, chase and top cameras.
  */
-import { command, on, section, store, theme, toast } from "/app.js";
+import { command, on, paintRange, section, store, theme, toast } from "/app.js";
 import { Compass, RudderBar, SailDial } from "/instruments.js";
 import { KNOTS, SOURCE_NAMES, age, bearing, clock, signed, timeOfDay } from "/format.js";
 
@@ -15,6 +19,20 @@ let dial, bar, compass;
 let lastRoute = "";
 let lastDraw = 0;
 const DRAW_INTERVAL_MS = 100;   // panels redraw at 10 Hz; the 3D view takes every snapshot
+const ICONS = {
+  pause: '<path d="M5 3.5h2v9H5zM9 3.5h2v9H9z" class="icon-fill"/>',
+  play: '<path d="M5 3.5 12.5 8 5 12.5z" class="icon-fill"/>',
+  again: '<path d="M3.5 3v4h4M3.9 6.8A5 5 0 1 1 3.2 9.5" class="icon-stroke"/>',
+  enter: '<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" class="icon-stroke"/>',
+  leave: '<path d="M6 2.5V6H2.5M13.5 6H10V2.5M10 13.5V10h3.5M2.5 10H6v3.5" class="icon-stroke"/>',
+};
+
+/* Set text only when it changes, so a 10 Hz redraw doesn't touch the page needlessly. */
+function text(id, value) {
+  const node = $(id);
+  if (node.textContent !== value) node.textContent = value;
+  return node;
+}
 
 export function initMission() {
   dial = new SailDial($("sail-dial"));
@@ -22,13 +40,14 @@ export function initMission() {
   compass = new Compass($("compass"));
   loadScenarios();
   bindControls();
+  bindFullscreen();
   on("sim", showSim);
   on("hello", (hello) => { if (view && hello.run === store.sim?.run) view.setTrack(hello.track); });
   on("proof", showFirmware);
   on("theme", (name) => view?.setTheme(name));
   on("section", (name) => {
     if (name === "mission") ensureView().then(() => view?.start());
-    else view?.stop();
+    else { view?.stop(); leaveFullscreen(); }
   });
 }
 
@@ -39,9 +58,12 @@ function ensureView() {
       view = new BoatView({ stage: $("stage"), canvas: $("scene3d"), labels: $("labels3d"), legend: $("vec-legend"),
                             onFrame: (azimuth) => compass.orient(azimuth) });
       view.setTheme(theme());
+      if (new URLSearchParams(location.search).has("debug")) window.windbound = { view };   // for the console
       if (store.sim) return syncScene(store.sim);
     }).catch((error) => {
-      $("view3d-meta").textContent = `The 3D view couldn't load: ${error.message}. It needs internet the first time.`;
+      const note = $("stage-note");
+      note.textContent = `The 3D view couldn't load (${error.message}). It loads three.js from the internet the first time you open it.`;
+      note.hidden = false;
     });
   }
   return viewLoading;
@@ -54,7 +76,7 @@ async function syncScene(sim) {
   const info = await (await fetch("/api/scene")).json();
   await view.setScene(info);
   if (store.hello?.run === sim.run) view.setTrack(store.hello.track);
-  $("view3d-meta").textContent = view.modelNote;
+  text("view3d-meta", view.modelWarning || "");
 }
 
 async function loadScenarios() {
@@ -71,33 +93,39 @@ async function send(body) {
   try { await command("sim", body); } catch (error) { toast(`The simulator refused that: ${error.message}`); }
 }
 
+function togglePause() {
+  const sim = store.sim;
+  if (sim) send({ action: sim.finished ? "restart" : sim.running ? "pause" : "resume" });
+}
+
+function setCamera(mode) {
+  for (const b of document.querySelectorAll("[data-camera]")) b.setAttribute("aria-pressed", String(b.dataset.camera === mode));
+  ensureView().then(() => view?.setMode(mode));
+}
+
 function bindControls() {
   $("scenario").addEventListener("change", (e) => send({ action: "load", scenario: e.target.value }));
   $("sim-restart").addEventListener("click", () => send({ action: "restart" }));
   $("sim-step").addEventListener("click", () => send({ action: "step" }));
-  $("sim-pause").addEventListener("click", () => {
-    const sim = store.sim;
-    if (!sim) return;
-    send({ action: sim.finished ? "restart" : sim.running ? "pause" : "resume" });
-  });
+  $("sim-pause").addEventListener("click", togglePause);
   for (const button of document.querySelectorAll("[data-speed]")) {
     button.addEventListener("click", () => {
       const value = button.dataset.speed;
       send({ action: "speed", speed: value === "max" ? "max" : Number(value) });
     });
   }
+  for (const button of document.querySelectorAll("[data-ap]")) {
+    button.addEventListener("click", () => send({ action: "autopilot", period_ms: Number(button.dataset.ap) }));
+  }
   for (const button of document.querySelectorAll("[data-camera]")) {
-    button.addEventListener("click", () => {
-      for (const b of document.querySelectorAll("[data-camera]")) b.setAttribute("aria-pressed", String(b === button));
-      ensureView().then(() => view.setMode(button.dataset.camera));
-    });
+    button.addEventListener("click", () => setCamera(button.dataset.camera));
   }
   for (const button of document.querySelectorAll("[data-vectors]")) {
     button.addEventListener("click", () => {
       button.setAttribute("aria-pressed", String(button.getAttribute("aria-pressed") !== "true"));
       const groups = new Set([...document.querySelectorAll('[data-vectors][aria-pressed="true"]')]
         .map((b) => b.dataset.vectors));
-      ensureView().then(() => view.setVectors(groups));
+      ensureView().then(() => view?.setVectors(groups));
     });
   }
   for (const toggle of document.querySelectorAll("[data-fault]")) {
@@ -115,6 +143,56 @@ function bindControls() {
     input.addEventListener("input", () => { $(`${id}-out`).textContent = format(input.value); });
     input.addEventListener("change", () => send({ action: "wind", [key]: Number(input.value) }));
   }
+  document.addEventListener("keydown", (event) => {
+    if (section !== "mission" || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.target.closest?.("input, select, textarea, [contenteditable]")) return;
+    const actions = {
+      " ": togglePause, ".": () => send({ action: "step" }), f: toggleFullscreen,
+      1: () => setCamera("orbit"), 2: () => setCamera("chase"), 3: () => setCamera("top"),
+    };
+    const action = actions[event.key.toLowerCase()];
+    if (!action || (event.key === " " && event.target.closest?.("button"))) return;
+    event.preventDefault();
+    action();
+  });
+}
+
+/* ----- full screen ------------------------------------------------------------ */
+
+/* The run panel (3D view, transport and timeline) fills the screen. Browsers
+   without element full screen get the same layout over the window. */
+function bindFullscreen() {
+  $("fullscreen").addEventListener("click", toggleFullscreen);
+  document.addEventListener("fullscreenchange", showFullscreen);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && $("run").classList.contains("expanded")) leaveFullscreen();
+  });
+}
+function isFullscreen() { return document.fullscreenElement === $("run") || $("run").classList.contains("expanded"); }
+async function toggleFullscreen() {
+  const run = $("run");
+  if (isFullscreen()) { leaveFullscreen(); return; }
+  try {
+    if (!run.requestFullscreen) throw new Error("no element full screen");
+    await run.requestFullscreen({ navigationUI: "hide" });
+  } catch (error) {
+    run.classList.add("expanded");
+  }
+  showFullscreen();
+}
+function leaveFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  $("run").classList.remove("expanded");
+  showFullscreen();
+}
+function showFullscreen() {
+  const full = isFullscreen();
+  const button = $("fullscreen");
+  button.setAttribute("aria-pressed", String(full));
+  button.setAttribute("aria-label", full ? "Leave full screen" : "Full screen");
+  button.title = full ? "Leave full screen (F or Esc)" : "Full screen (F)";
+  $("fullscreen-icon").innerHTML = full ? ICONS.leave : ICONS.enter;
+  document.body.classList.toggle("run-expanded", $("run").classList.contains("expanded"));
 }
 
 /* ----- drawing a snapshot -------------------------------------------------- */
@@ -153,89 +231,89 @@ function showSim(sim) {
   if (section !== "mission" || now - lastDraw < DRAW_INTERVAL_MS) return;
   lastDraw = now;
 
-  const [text, alert] = finding(sim);
-  $("mission-finding").textContent = text;
-  $("mission-finding").classList.toggle("alert", alert);
-  const label = sim.finished ? "Run again" : sim.running ? "Pause" : "Resume";
-  $("sim-pause-label").textContent = label;
-  $("sim-pause-icon").innerHTML = sim.running
-    ? '<path d="M5 3.5h2v9H5zM9 3.5h2v9H9z" class="icon-fill"/>'
-    : '<path d="M5 3.5 12.5 8 5 12.5z" class="icon-fill"/>';
+  const [line, alert] = finding(sim);
+  text("mission-finding", line).classList.toggle("alert", alert);
+  text("run-finding", line).classList.toggle("alert", alert);
+  text("run-h", sim.title);
+  const state = sim.finished ? "again" : sim.running ? "pause" : "play";
+  if ($("sim-pause").dataset.state !== state) {
+    $("sim-pause").dataset.state = state;
+    $("sim-pause-icon").innerHTML = ICONS[state];
+    text("sim-pause-label", { again: "Run again", pause: "Pause", play: "Resume" }[state]);
+  }
   for (const b of document.querySelectorAll("[data-speed]")) {
     b.setAttribute("aria-pressed", String(b.dataset.speed === String(sim.speed)));
   }
-
-  $("m-time").textContent = clock(s.t);
-  $("m-time-of").textContent = `of ${clock(sim.duration_s)}`;
-  $("m-time-meter").style.width = `${Math.min(100, (100 * s.t) / sim.duration_s)}%`;
-  $("m-speed").textContent = (s.speed_ms * KNOTS).toFixed(2);
-  $("m-speed-note").textContent = `${s.speed_ms.toFixed(2)} m/s · heel ${Math.abs(s.heel).toFixed(0)}°${
-    Math.abs(s.heel) >= 0.5 ? (s.heel > 0 ? " to starboard" : " to port") : ""}`;
-  const period = sim.autopilot_period_ms / 1000;
-  $("m-ap").textContent = period.toFixed(1);
-  $("m-ap-note").textContent = period >= 5
-    ? "At 5 s the heading swings about ±55° (fine at 1 s)" : "Fast enough to hold a course";
-  const checks = sim.checks;
-  const passed = checks.filter((c) => c.status === "pass").length;
-  const failed = checks.filter((c) => c.status === "fail");
-  $("m-checks").textContent = `${passed}`;
-  $("m-checks-small").textContent = `of ${checks.length} passing`;
-  $("m-checks-note").textContent = failed.length ? `Failing: ${failed.map((c) => c.title.toLowerCase()).join("; ")}`
-    : `${checks.filter((c) => c.status === "wait").length} waiting`;
-  $("m-checks-note").classList.toggle("bad", failed.length > 0);
+  text("m-time", clock(s.t));
+  text("m-time-of", ` / ${clock(sim.duration_s)}`);
 
   // The 3D panel's instruments
-  $("n-speed").textContent = (s.speed_ms * KNOTS).toFixed(2);
-  $("n-heading").textContent = bearing(s.heading);
-  $("n-heel").textContent = Math.abs(s.heel).toFixed(0);
-  $("n-depth").textContent = s.depth === null ? "—" : s.depth.toFixed(1);
-  $("n-depth-unit").textContent = s.depth === null ? "" : "m";
-  $("n-wind").textContent = s.tws.toFixed(1);
+  text("n-speed", (s.speed_ms * KNOTS).toFixed(2));
+  text("n-heading", bearing(s.heading));
+  text("n-heel", Math.abs(s.heel).toFixed(0));
+  text("n-depth", s.depth === null ? "—" : s.depth.toFixed(1));
+  text("n-depth-unit", s.depth === null ? "" : "m");
+  text("n-wind", s.tws.toFixed(1));
   compass.draw(s);
   const toast3d = $("toast3d");
   const note = s.grounded_at !== null ? `Aground at ${clock(s.grounded_at)}` : sim.finished ? `Finished at ${clock(s.t)}` : "";
   toast3d.hidden = !note;
-  toast3d.textContent = note;
-  toast3d.classList.toggle("alert", s.grounded_at !== null);
+  text("toast3d", note).classList.toggle("alert", s.grounded_at !== null);
 
   // Sail and rudder
   dial.draw(s);
-  $("sail-true").textContent = `${signed(s.sail)}°`;
-  $("sail-read").textContent = `${signed(s.sail_believed, 0)}° · encoder ${s.encoder}`;
-  $("sail-target").textContent = `${signed(s.sail_target, 0)}°`;
-  $("sail-motor").textContent = s.sail_motor > 0 ? "Channel 2 on" : s.sail_motor < 0 ? "Channel 1 on" : "Off";
+  text("sail-true", `${signed(s.sail)}°`);
+  text("sail-read", `${signed(s.sail_believed, 0)}° · encoder ${s.encoder}`);
+  text("sail-target", `${signed(s.sail_target, 0)}°`);
+  const motor = s.sail_motor > 0 ? "Channel 2 on" : s.sail_motor < 0 ? "Channel 1 on" : "Off";
+  text("sail-motor", motor);
   $("sail-pill").hidden = !s.encoder_stuck;
-  $("sail-pill").textContent = "Encoder not updating";
+  text("sail-pill", "Encoder not updating");
   bar.draw(s);
-  $("rudder-true").textContent = `${signed(s.rudder)}°`;
-  $("rudder-target").textContent = `${signed(s.rudder_target, 0)}°`;
-  $("rudder-pulse-m").textContent = `${s.rudder_pulse} µs`;
+  text("rudder-true", `${signed(s.rudder)}°`);
+  text("rudder-target", `${signed(s.rudder_target, 0)}°`);
+  text("rudder-pulse-m", `${s.rudder_pulse} µs`);
   $("rudder-pill").hidden = s.rudder_pulse_ok;
-  $("rudder-pill").textContent = "Outside servo range";
+  text("rudder-pill", "Outside servo range");
 
-  // What the firmware listens to
-  for (const [axis, source, target] of [["sail", s.sail_source, s.sail_target], ["rudder", s.rudder_source, s.rudder_target]]) {
-    const pill = $(`m-${axis}-src`);
-    pill.textContent = SOURCE_NAMES[source];
-    pill.className = `pill ${source === "rpi" ? "accent" : source === "none" ? "neg" : ""}`;
-    $(`m-${axis}-src-sub`).textContent = source === "none" ? "no fresh link"
-      : `target ${signed(target, 0)}°` + (source === "rpi" && s.xbee_valid ? ", the joystick sent 0" : "");
+  // What the firmware listens to, in the panel and on the full-screen view
+  for (const [axis, source] of [["sail", s.sail_source], ["rudder", s.rudder_source]]) {
+    for (const id of [`m-${axis}-src`, `fs-${axis}-src`]) {
+      const pill = text(id, SOURCE_NAMES[source]);
+      pill.className = `pill ${source === "rpi" ? "accent" : source === "none" ? "neg" : ""}`;
+    }
   }
+  const zeroed = [["sail", s.sail_source], ["rudder", s.rudder_source]]
+    .filter(([, source]) => source === "rpi" && s.xbee_valid).map(([axis]) => axis);
+  $("m-arbitration").hidden = !zeroed.length;
+  text("m-arbitration", zeroed.length ? `The joystick is sending 0 for the ${zeroed.join(" and ")}, which the firmware reads as no command, so the autopilot keeps it.` : "");
+  text("fs-sail", source0(s.sail_source, `${signed(s.sail_target, 0)}° · motor ${motor.toLowerCase()}`));
+  text("fs-rudder", source0(s.rudder_source, `${signed(s.rudder_target, 0)}° · ${s.rudder_pulse} µs`));
   linkPill($("m-xbee"), s.xbee_valid, s.xbee_age);
   linkPill($("m-rpi"), s.rpi_valid, s.rpi_age);
+  text("fs-xbee", $("m-xbee").textContent);
+  text("fs-rpi", $("m-rpi").textContent);
 
   for (const toggle of document.querySelectorAll("[data-fault]")) {
     toggle.setAttribute("aria-checked", String(Boolean(s.faults[toggle.dataset.fault])));
   }
   syncWind(sim.wind_spec);
+  for (const b of document.querySelectorAll("[data-ap]")) {
+    b.setAttribute("aria-pressed", String(Number(b.dataset.ap) === sim.autopilot_period_ms));
+  }
+  text("m-ap-note", sim.autopilot_period_ms >= 5000 ? "At 5 s the heading swings about ±55°"
+    : sim.autopilot_period_ms >= 2000 ? "Slow: the heading wanders" : "Fast enough to hold a course");
   drawLanes(sim);
-  drawChecks(checks);
+  drawChecks(sim.checks);
 }
 
+const source0 = (source, detail) => (source === "none" ? "motor off · rudder centred" : detail);
+
 function linkPill(node, valid, ageMs) {
-  if (ageMs === null) { node.textContent = "Never heard"; node.className = "pill"; }
-  else if (valid) { node.textContent = `${age(ageMs / 1000)} ago`; node.className = "pill"; }
-  else { node.textContent = `Timed out · ${age(ageMs / 1000)}`; node.className = "pill neg"; }
+  const [word, kind] = ageMs === null ? ["Never heard", ""] : valid ? [`${age(ageMs / 1000)} ago`, ""]
+    : [`Timed out · ${age(ageMs / 1000)}`, "neg"];
+  if (node.textContent !== word) node.textContent = word;
+  node.className = `pill ${kind}`;
 }
 
 function syncWind(spec) {
@@ -245,36 +323,55 @@ function syncWind(spec) {
   for (const [id, value, format] of fields) {
     const input = $(id);
     if (document.activeElement === input) continue;
-    input.value = value;
-    $(`${id}-out`).textContent = format(value);
+    if (Number(input.value) !== value) { input.value = value; paintRange(input); }
+    text(`${id}-out`, format(value));
   }
 }
 
-/* Which link the firmware obeyed, for the sail and the rudder, over the run. */
+/* ----- who steered, second by second ------------------------------------------ */
+
+/* Which link the firmware obeyed for the sail and the rudder, across the run,
+   with the playhead at the simulation's time. Segments only ever grow or get
+   added at the end, so a redraw touches the last one or two. */
+const lanes = { run: null, span: 0, sail: { first: null, nodes: [] }, rudder: { first: null, nodes: [] } };
+
 function drawLanes(sim) {
-  const svg = $("lanes");
-  const x0 = 64, x1 = 714, span = Math.max(sim.duration_s, 1);
-  const x = (t) => x0 + (Math.min(t, span) / span) * (x1 - x0);
-  const parts = [];
-  for (const [axis, y, label] of [["sail", 18, "Sail"], ["rudder", 52, "Rudder"]]) {
-    parts.push(`<text x="0" y="${y + 15}">${label}</text>`);
-    for (const [start, end, source] of sim.timeline[axis]) {
-      const w = Math.max(x(end) - x(start), 1.5);
-      parts.push(source === "none"
-        ? `<rect class="seg-none" x="${x(start)}" y="${y + 1}" width="${w}" height="20" rx="3"/>`
-        : `<rect class="seg-${source}" x="${x(start)}" y="${y}" width="${w}" height="22" rx="3"/>`);
+  const span = Math.max(sim.duration_s, 1);
+  if (lanes.run !== sim.run || lanes.span !== span) {
+    Object.assign(lanes, { run: sim.run, span });
+    for (const axis of ["sail", "rudder"]) { $(`lane-${axis}`).replaceChildren(); lanes[axis] = { first: null, nodes: [] }; }
+    const step = niceStep(span / 5);
+    const ticks = [];
+    for (let t = 0; t <= span + 1e-6; t += step) {
+      const tick = document.createElement("span");
+      tick.textContent = t === 0 ? "0" : clock(t);
+      tick.style.left = `${(100 * t) / span}%`;
+      tick.className = t === 0 ? "first" : t + step > span + 1e-6 && (100 * t) / span > 92 ? "last" : "";
+      ticks.push(tick);
+    }
+    $("lane-ticks").replaceChildren(...ticks);
+  }
+  for (const axis of ["sail", "rudder"]) {
+    const segments = sim.timeline[axis], lane = lanes[axis], track = $(`lane-${axis}`);
+    if (!segments.length) continue;
+    if (lane.first !== segments[0][0] || segments.length < lane.nodes.length) {
+      track.replaceChildren();
+      Object.assign(lane, { first: segments[0][0], nodes: [] });
+    }
+    for (let i = Math.max(lane.nodes.length - 2, 0); i < segments.length; i++) {
+      const [start, end, source] = segments[i];
+      let node = lane.nodes[i];
+      if (!node) {
+        node = document.createElement("i");
+        node.className = `seg seg-${source}`;
+        track.append(node);
+        lane.nodes.push(node);
+      }
+      node.style.left = `${(100 * start) / span}%`;
+      node.style.width = `${(100 * Math.max(end - start, 0)) / span}%`;
     }
   }
-  const now = x(sim.state.t);
-  parts.push(`<line class="now" x1="${now}" y1="8" x2="${now}" y2="84"/>`);
-  parts.push(`<line class="axis-line" x1="${x0}" y1="90" x2="${x1}" y2="90"/>`);
-  const step = niceStep(span / 5);
-  for (let t = 0; t <= span + 1e-6; t += step) {
-    const anchor = t === 0 ? "start" : x(t) > x1 - 20 ? "end" : "middle";
-    parts.push(`<text x="${x(t)}" y="110" text-anchor="${anchor}">${t === 0 ? "0" : clock(t)}</text>`);
-  }
-  svg.innerHTML = parts.join("");
-  $("who-meta").textContent = `0 to ${clock(span)}`;
+  $("playhead").style.left = `${Math.min(100, (100 * sim.state.t) / span)}%`;
 }
 
 function niceStep(raw) {
@@ -282,10 +379,19 @@ function niceStep(raw) {
   return steps.find((s) => s >= raw) || 3600;
 }
 
+/* ----- this run's checks ------------------------------------------------------ */
+
 const STATUS = { pass: ["Passed", "pos"], fail: ["Failed", "neg"], wait: ["Waiting", ""] };
+let lastChecks = "";
 function drawChecks(checks) {
-  const list = $("run-checks");
-  list.replaceChildren(...checks.map((c) => {
+  const passed = checks.filter((c) => c.status === "pass").length;
+  const failed = checks.filter((c) => c.status === "fail").length;
+  text("m-checks", failed ? `${failed} failing · ${passed} of ${checks.length} passing` : `${passed} of ${checks.length} passing`)
+    .classList.toggle("bad", failed > 0);
+  const key = JSON.stringify(checks);
+  if (key === lastChecks) return;
+  lastChecks = key;
+  $("run-checks").replaceChildren(...checks.map((c) => {
     const li = document.createElement("li");
     const [word, kind] = STATUS[c.status];
     li.innerHTML = `<span class="pill ${kind}">${word}</span><span class="grow"><span class="t"></span><span class="sub"></span></span>`;
@@ -298,12 +404,17 @@ function drawChecks(checks) {
 /* ----- the firmware build -------------------------------------------------- */
 
 function showFirmware(proof) {
-  const id = proof.identity;
-  $("m-fw").textContent = id.commit || "—";
-  $("m-fw-small").textContent = id.edited.length ? `+ ${id.edited.length} edited` : "";
-  const build = proof.build;
-  $("m-fw-note").textContent = build.state === "building" ? "Rebuilding…"
-    : build.state === "failed" ? "The last rebuild failed; still running the previous build"
-    : id.built_at ? `Built ${timeOfDay(id.built_at)}` : "Not built yet";
-  $("m-fw-note").classList.toggle("bad", build.state === "failed");
+  const id = proof.identity, build = proof.build, checks = proof.checks;
+  const results = checks.results;
+  const count = (outcome) => results.filter((r) => r.outcome === outcome).length;
+  text("m-suite", checks.state === "running" ? "The full suite is running…"
+    : results.length ? `Last full run, ${timeOfDay(checks.finished)}: ${count("passed")} passed, ${count("known")} known issues, ${count("failed")} failing.`
+    : "The full suite runs the firmware's unit tests, every scenario and its properties.")
+    .classList.toggle("bad", count("failed") > 0 && checks.state !== "running");
+  const link = $("m-fw");
+  const edited = id.edited.length ? ` + ${id.edited.length} edited` : "";
+  link.textContent = build.state === "building" ? "Rebuilding…"
+    : build.state === "failed" ? "Rebuild failed · running the previous build"
+    : `${id.commit || "Uncommitted"}${edited}${id.built_at ? ` · built ${timeOfDay(id.built_at)}` : ""}`;
+  link.classList.toggle("bad", build.state === "failed");
 }

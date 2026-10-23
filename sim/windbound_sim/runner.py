@@ -24,6 +24,7 @@ MAX_SPEED_BUSY_S = 0.025       # at "max", how long each frame computes before p
 TRACK_SPACING_M = 1.0
 TIMELINE_LIMIT = 400
 SPEEDS = (1, 5, 20)            # plus "max"
+AUTOPILOT_PERIODS_MS = (500, 1000, 2000, 5000)
 
 
 class SimRunner:
@@ -53,6 +54,7 @@ class SimRunner:
             "operator": lambda: all(abs(float(args[k])) <= 180 for k in ("sail", "rudder")),
             "wind": lambda: all(k in ("speed_ms", "from_deg", "gust_ms") for k in args),
             "waypoints": lambda: all(len(w) == 2 for w in args["waypoints"]),
+            "autopilot": lambda: int(args["period_ms"]) in AUTOPILOT_PERIODS_MS,
         }.get(action, lambda: action in ("restart", "pause", "resume", "step", "release", "stop_boat"))
         try:
             ok = check()
@@ -96,6 +98,12 @@ class SimRunner:
             sim.set_fault("rpi_silent", True)
         elif action == "waypoints":
             sim.set_waypoints(args["waypoints"])
+        elif action == "autopilot":
+            # How often the Raspberry Pi sends targets. It applies from the next
+            # step and stays for later runs, like the wind.
+            change = {"autopilot": {"period_ms": int(args["period_ms"])}}
+            self.params = self.params.with_changes(**change)
+            sim.params = sim.params.with_changes(**change)
 
     # ----- running ----------------------------------------------------------- #
 
@@ -144,12 +152,15 @@ class SimRunner:
         while True:
             now = time.monotonic()
             elapsed, last = now - last, now
+            changed = self._published is None
             try:
                 while True:
                     self._apply(*self._commands.get_nowait())
+                    changed = True
             except queue.Empty:
                 pass
             if self.running:
+                changed = True
                 if self.speed == "max":
                     deadline = time.monotonic() + MAX_SPEED_BUSY_S
                     while self.running and time.monotonic() < deadline:
@@ -157,7 +168,8 @@ class SimRunner:
                 else:
                     # Never fall more than a quarter second behind, e.g. after a pause.
                     self._advance_to(self.sim.now_ms + round(min(elapsed, 0.25) * self.speed * 1000))
-            self._publish()
+            if changed:              # a paused or finished run sends nothing new
+                self._publish()
             time.sleep(max(0.0, FRAME_S - (time.monotonic() - now)))
 
     def _publish(self):
@@ -172,7 +184,7 @@ class SimRunner:
             "running": self.running,
             "finished": self.finished,
             "speed": self.speed,
-            "autopilot_period_ms": self.params.autopilot.period_ms,
+            "autopilot_period_ms": sim.params.autopilot.period_ms,
             "wind_spec": {"speed_ms": sim.wind.spec.speed_ms, "from_deg": sim.wind.spec.from_deg,
                           "gust_ms": sim.wind.spec.gust_ms},
             "origin": [sim.origin.lat, sim.origin.lon],
