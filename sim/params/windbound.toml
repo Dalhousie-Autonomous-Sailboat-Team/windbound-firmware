@@ -1,0 +1,88 @@
+# Windbound boat parameters for the simulator.
+#
+# Every number marked PLACEHOLDER is an estimate for a ~2 m autonomous
+# sailboat, not a measurement of Windbound. Replace them as the team measures
+# the boat; the simulator's answers are only as good as these values.
+# Positions are metres along the centreline from the centre of gravity,
+# positive forward.
+
+[hull]
+mass_kg = 25.0                # PLACEHOLDER: weigh the boat
+lwl_m = 1.9                   # PLACEHOLDER: waterline length
+surge_added_mass = 0.1        # fraction of mass
+sway_added_mass = 0.8         # fraction of mass
+yaw_inertia_kgm2 = 8.0        # PLACEHOLDER
+resistance_n_per_ms2 = 6.0    # PLACEHOLDER: fit from a tow test
+lateral_area_m2 = 0.35        # hull + keel side area for cross-flow drag
+cross_flow_cd = 1.0
+yaw_damping_lin = 3.0         # N·m per rad/s; keel and rudder add their own
+yaw_damping_quad = 5.0        # N·m per (rad/s)^2
+draft_m = 2.0                 # BOAT_DRAFT_M in the ground station's waypoints.py; confirm
+gm_m = 0.3                    # PLACEHOLDER: metacentric height; tilt test with a known weight
+roll_inertia_kgm2 = 3.0       # PLACEHOLDER
+roll_damping = 12.0           # N·m per rad/s
+
+[wing]
+area_m2 = 1.0                 # PLACEHOLDER: measure the wing
+aspect_ratio = 3.0
+x_m = 0.05                    # centre of effort ahead of the CG
+z_m = 1.05                    # centre of effort above the waterline
+stall_deg = 14.0
+cd0 = 0.02
+
+[keel]
+area_m2 = 0.06                # PLACEHOLDER
+aspect_ratio = 2.5
+x_m = 0.0
+z_m = -0.36                   # centre of lateral resistance below the waterline
+stall_deg = 15.0
+cd0 = 0.01
+
+[rudder]
+area_m2 = 0.025               # PLACEHOLDER
+aspect_ratio = 2.5
+x_m = -0.85
+z_m = -0.25
+stall_deg = 15.0
+cd0 = 0.01
+
+[sail_drive]
+# Mast rotation speed with the firmware's MOTOR_SLOW duty (11000 of 12800).
+# Unknown: the sail controller hunts if this is much above ~90 deg/s.
+speed_dps_at_slow = 45.0      # PLACEHOLDER: time a full turn on the bench
+slow_duty = 11000
+spin_up_s = 0.08
+# +1 when timer channel 2 raises the AS5600 angle, as control_logic.c assumes.
+polarity = 1
+
+[encoder]
+centre_deg = 180.0            # AS5600 reading with the wing on the centreline
+# +1 when the reading rises as the wing's trailing edge swings to port.
+sign = 1
+period_ms = 100               # EncoderTask delay
+phase_ms = 35
+
+[rudder_servo]
+centre_us = 1370.0            # pulse that centres the rudder (1500 - 130 trim)
+us_per_deg = 8.889            # 400 us per 45 degrees, as control_logic.c maps it
+slew_dps = 300.0              # PLACEHOLDER: hobby servo, unloaded
+max_deg = 45.0                # PLACEHOLDER: mechanical stops
+valid_min_us = 1000.0
+valid_max_us = 2000.0
+# +1 when a longer pulse turns the boat to starboard.
+direction = 1
+
+[windvane]
+period_ms = 500               # PLACEHOLDER: log USART3 at the dock
+noise_deg = 3.0
+
+[nav]
+gps_noise_m = 2.5
+heading_noise_deg = 2.0
+
+[operator]
+period_ms = 1000              # joystick controller XBee send period
+
+[autopilot]
+# The firmware treats RPi data as stale after 10 s, "2x the send rate".
+period_ms = 5000

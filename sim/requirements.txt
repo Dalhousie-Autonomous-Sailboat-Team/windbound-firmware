@@ -1,0 +1,5 @@
+# Simulator dependencies. The core needs only the standard library;
+# numpy reads lake depth grids, pyserial and pytest run the tests.
+numpy
+pyserial
+pytest

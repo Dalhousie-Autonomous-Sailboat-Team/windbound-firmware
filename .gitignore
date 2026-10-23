@@ -71,3 +71,9 @@ compile_commands.json
 *.idb
 *.pdb
 .clangd
+
+# Simulator (sim/)
+sim/.venv/
+__pycache__/
+.pytest_cache/
+.taste-skill/
