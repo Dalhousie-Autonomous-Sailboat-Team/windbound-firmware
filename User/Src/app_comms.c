@@ -256,31 +256,7 @@ void TelemetryTask(void *argument)
         
         /* ── 3. Format and transmit ──────────────────────────────── */
         char buf[TELEMETRY_BUF_LEN];
-        snprintf(buf, sizeof(buf),
-                 "{"
-                 "\"tb\":%d,"
-                 "\"tlat\":%d,"
-                 "\"tlon\":%d,"
-                 "\"tsa\":%d,"
-                 "\"tfa\":%d,"
-                 "\"tra\":%d,"
-                 "\"clat\":%d,"
-                 "\"clon\":%d,"
-                 "\"cb\":%d,"
-                 "\"wa\":%d,"
-                 "\"sa\":%d,"
-                 "}\r\n",
-                 (int)rpi.target_bearing,
-                 (int)rpi.target_lat,
-                 (int)rpi.target_lon,
-                 (int)rpi.target_sail_angle,
-                 (int)rpi.target_flap_angle,
-                 (int)rpi.target_rudder_angle,
-                 (int)rpi.current_lat,
-                 (int)rpi.current_lon,
-                 (int)rpi.current_bearing,
-                 (int)rpi.current_wind_angle,
-                 (int)sail_enc.angle);
+        AppProtocol_FormatTelemetry(buf, sizeof(buf), &rpi, &sail_enc);
         // UserUART_Transmit(UART_PORT_XBEE, (uint8_t *)buf, strlen(buf));
         Radio_Send(buf);
         //Debug_Print(buf);

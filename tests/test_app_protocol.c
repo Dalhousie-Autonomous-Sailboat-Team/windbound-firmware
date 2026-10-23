@@ -109,6 +109,39 @@ static void wind_parser_rejects_wrong_sentence_type(void)
     TEST_EXPECT_FALSE(AppProtocol_ParseWindNmea("$IIMWV,1,R,2,N,A*00", NULL));
 }
 
+static void telemetry_formats_ground_station_line(void)
+{
+    RPiSample_t rpi = {0};
+    rpi.target_bearing = 91.5f;
+    rpi.target_lat = 44.6912f;
+    rpi.target_lon = -63.5512f;
+    rpi.target_sail_angle = 25.5f;
+    rpi.target_flap_angle = 3.0f;
+    rpi.target_rudder_angle = -12.5f;
+    rpi.current_lat = 44.6901f;
+    rpi.current_lon = -63.5543f;
+    rpi.current_bearing = 180.0f;
+    rpi.current_wind_angle = 42.25f;
+    EncoderSample_t sail_enc = {4U, 213U};
+    char buffer[256];
+
+    /* Characterizes today's format: integer fields and a trailing comma. */
+    TEST_EXPECT_TRUE(AppProtocol_FormatTelemetry(buffer, sizeof(buffer), &rpi, &sail_enc));
+    TEST_EXPECT_STRING("{\"tb\":91,\"tlat\":44,\"tlon\":-63,\"tsa\":25,\"tfa\":3,\"tra\":-12,"
+                       "\"clat\":44,\"clon\":-63,\"cb\":180,\"wa\":42,\"sa\":213,}\r\n",
+                       buffer);
+}
+
+static void telemetry_reports_short_buffer(void)
+{
+    RPiSample_t rpi = {0};
+    EncoderSample_t sail_enc = {4U, 180U};
+    char buffer[16];
+
+    TEST_EXPECT_FALSE(AppProtocol_FormatTelemetry(buffer, sizeof(buffer), &rpi, &sail_enc));
+    TEST_EXPECT_FALSE(AppProtocol_FormatTelemetry(buffer, sizeof(buffer), NULL, &sail_enc));
+}
+
 int main(void)
 {
     TestHarness_Run("string-to-float handles sign and precision",
@@ -123,5 +156,8 @@ int main(void)
     TestHarness_Run("wind parser extracts IIMWV fields", wind_parser_extracts_iimwv_fields);
     TestHarness_Run("wind parser rejects wrong sentence type",
                     wind_parser_rejects_wrong_sentence_type);
+    TestHarness_Run("telemetry formats ground station line",
+                    telemetry_formats_ground_station_line);
+    TestHarness_Run("telemetry reports short buffer", telemetry_reports_short_buffer);
     return TestHarness_Finish();
 }

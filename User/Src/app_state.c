@@ -1,5 +1,7 @@
 #include "app_state.h"
 
+#include <stddef.h>
+
 #include "cmsis_os.h"
 
 /* =================== WIND VARIABLES =========================*/

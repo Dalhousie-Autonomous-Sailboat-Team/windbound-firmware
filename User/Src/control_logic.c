@@ -45,6 +45,24 @@ static float sail_command_to_encoder_deg(float sail_angle)
     return deg;
 }
 
+static ControlSource_t pick_source(bool xbee_valid, bool rpi_valid, float xbee_value)
+{
+    if (xbee_valid && (!rpi_valid || xbee_value != 0.0f))
+        return CONTROL_SOURCE_XBEE;
+    if (rpi_valid)
+        return CONTROL_SOURCE_RPI;
+    return CONTROL_SOURCE_NONE;
+}
+
+static float source_value(ControlSource_t source, float xbee_value, float rpi_value)
+{
+    if (source == CONTROL_SOURCE_XBEE)
+        return xbee_value;
+    if (source == CONTROL_SOURCE_RPI)
+        return rpi_value;
+    return 0.0f;
+}
+
 void ControlLogic_Evaluate(const ControlLogicInput_t *input, ControlLogicOutput_t *output)
 {
     if (output == NULL)
@@ -64,46 +82,18 @@ void ControlLogic_Evaluate(const ControlLogicInput_t *input, ControlLogicOutput_
                        (input->now_ms - input->rpi.last_updated_ms) < RPI_TIMEOUT_MS;
 
     /*
-     * Sail angle fallback hierarchy: a non-zero XBee command overrides the
-     * RPi when both sources are valid; otherwise use the remaining valid
-     * source, or command zero when neither source is valid.
+     * Fallback hierarchy, applied to the sail and the rudder independently:
+     * a non-zero XBee command overrides the RPi when both sources are valid;
+     * otherwise use the remaining valid source, or command zero when neither
+     * source is valid.
      */
-    if (result.xbee_valid && result.rpi_valid)
-    {
-        result.target_sail_angle =
-            (input->xbee.sail_angle != 0.0f) ? input->xbee.sail_angle : input->rpi.target_sail_angle;
-    }
-    else if (result.xbee_valid)
-    {
-        result.target_sail_angle = input->xbee.sail_angle;
-    }
-    else if (result.rpi_valid)
-    {
-        result.target_sail_angle = input->rpi.target_sail_angle;
-    }
-    else
-    {
-        result.target_sail_angle = 0.0f;
-    }
+    result.sail_source = pick_source(result.xbee_valid, result.rpi_valid, input->xbee.sail_angle);
+    result.target_sail_angle =
+        source_value(result.sail_source, input->xbee.sail_angle, input->rpi.target_sail_angle);
 
-    /* Apply the same fallback hierarchy independently to the rudder angle. */
-    if (result.xbee_valid && result.rpi_valid)
-    {
-        result.target_rudder_angle =
-            (input->xbee.rud_angle != 0.0f) ? input->xbee.rud_angle : input->rpi.target_rudder_angle;
-    }
-    else if (result.xbee_valid)
-    {
-        result.target_rudder_angle = input->xbee.rud_angle;
-    }
-    else if (result.rpi_valid)
-    {
-        result.target_rudder_angle = input->rpi.target_rudder_angle;
-    }
-    else
-    {
-        result.target_rudder_angle = 0.0f;
-    }
+    result.rudder_source = pick_source(result.xbee_valid, result.rpi_valid, input->xbee.rud_angle);
+    result.target_rudder_angle =
+        source_value(result.rudder_source, input->xbee.rud_angle, input->rpi.target_rudder_angle);
 
     if (result.xbee_valid || result.rpi_valid)
     {

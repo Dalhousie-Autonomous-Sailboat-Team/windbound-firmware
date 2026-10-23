@@ -173,6 +173,41 @@ bool AppProtocol_ParseRpiSample(const char *packet, RPiSample_t *rpi)
     return true;
 }
 
+bool AppProtocol_FormatTelemetry(char *buf, size_t len, const RPiSample_t *rpi,
+                                 const EncoderSample_t *sail_enc)
+{
+    if (buf == NULL || len == 0 || rpi == NULL || sail_enc == NULL)
+        return false;
+
+    int written = snprintf(buf, len,
+                           "{"
+                           "\"tb\":%d,"
+                           "\"tlat\":%d,"
+                           "\"tlon\":%d,"
+                           "\"tsa\":%d,"
+                           "\"tfa\":%d,"
+                           "\"tra\":%d,"
+                           "\"clat\":%d,"
+                           "\"clon\":%d,"
+                           "\"cb\":%d,"
+                           "\"wa\":%d,"
+                           "\"sa\":%d,"
+                           "}\r\n",
+                           (int)rpi->target_bearing,
+                           (int)rpi->target_lat,
+                           (int)rpi->target_lon,
+                           (int)rpi->target_sail_angle,
+                           (int)rpi->target_flap_angle,
+                           (int)rpi->target_rudder_angle,
+                           (int)rpi->current_lat,
+                           (int)rpi->current_lon,
+                           (int)rpi->current_bearing,
+                           (int)rpi->current_wind_angle,
+                           (int)sail_enc->angle);
+
+    return written > 0 && (size_t)written < len;
+}
+
 float StringToFloat(const char *str)
 {
     if (str == NULL || *str == '\0')
