@@ -67,14 +67,10 @@
       <button class="btn ghost icon" type="button" id="shortcuts-open" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
         <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5" class="icon-stroke"/><path d="M4 6.5h.01M6.5 6.5h.01M9 6.5h.01M11.5 6.5h.01M4.5 9.5h7" class="icon-stroke"/></svg>
       </button>
-      <div class="seg theme" role="group" aria-label="Theme">
-        <button type="button" data-theme-choice="light" aria-pressed="false" aria-label="Light theme" title="Light theme">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3" class="icon-stroke"/><path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" class="icon-stroke"/></svg>
-        </button>
-        <button type="button" data-theme-choice="dark" aria-pressed="false" aria-label="Dark theme" title="Dark theme">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.2 10.2A5.6 5.6 0 0 1 5.8 2.8a5.6 5.6 0 1 0 7.4 7.4Z" class="icon-stroke"/></svg>
-        </button>
-      </div>
+      <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Dark theme" aria-pressed="false" title="Switch to the dark theme">
+        <svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3" class="icon-stroke"/><path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" class="icon-stroke"/></svg>
+        <svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.2 10.2A5.6 5.6 0 0 1 5.8 2.8a5.6 5.6 0 1 0 7.4 7.4Z" class="icon-stroke"/></svg>
+      </button>
       <button class="stop-top" type="button" id="stop">
         <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2h8l6 6v8l-6 6H8l-6-6V8z" class="stop-outline"/><path d="M8 12h8" class="stop-bar"/></svg>
         <span id="stop-label">Stop boat</span>
@@ -285,7 +281,7 @@
                   <button type="button" data-camera="chase" aria-pressed="false" title="Sit behind the boat and turn with it (2)">Chase</button>
                   <button type="button" data-camera="top" aria-pressed="false" title="Look straight down at the depth chart, north up (3)">Top</button>
                 </div>
-                <div class="seg" role="group" aria-label="Show on the boat">
+                <div class="seg" role="group" aria-label="Show on the boat" data-multi>
                   <button type="button" data-vectors="forces" aria-pressed="false" title="Forces on the wing, keel, rudder and hull">Forces</button>
                   <button type="button" data-vectors="wind" aria-pressed="false" title="True and apparent wind">Wind</button>
                   <button type="button" data-vectors="motion" aria-pressed="false" title="Velocity and leeway">Motion</button>

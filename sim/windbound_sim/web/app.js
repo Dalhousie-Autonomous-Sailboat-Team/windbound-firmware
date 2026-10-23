@@ -55,23 +55,63 @@ document.addEventListener("input", (event) => { if (event.target.matches?.('inpu
 for (const input of document.querySelectorAll('input[type="range"]')) paintRange(input);
 
 /* ----- theme ------------------------------------------------------------ */
+/* One button switches between light and dark. Where the browser can, the new
+   theme spreads out from the button in a circle; otherwise colours fade. */
 const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 export const theme = () => document.documentElement.dataset.theme || (darkQuery.matches ? "dark" : "light");
 
 function showTheme() {
-  for (const button of document.querySelectorAll("[data-theme-choice]")) {
-    button.setAttribute("aria-pressed", String(button.dataset.themeChoice === theme()));
-  }
+  const dark = theme() === "dark";
+  const toggle = $("theme-toggle");
+  toggle.setAttribute("aria-pressed", String(dark));
+  toggle.title = dark ? "Switch to the light theme" : "Switch to the dark theme";
   emit("theme", theme());
 }
-for (const button of document.querySelectorAll("[data-theme-choice]")) {
-  button.addEventListener("click", () => {
-    document.documentElement.dataset.theme = button.dataset.themeChoice;
-    try { localStorage.setItem("windbound-theme", button.dataset.themeChoice); } catch (e) {}
-    showTheme();
-  });
+
+function setTheme(name) {
+  document.documentElement.dataset.theme = name;
+  try { localStorage.setItem("windbound-theme", name); } catch (e) {}
+  showTheme();
 }
+
+$("theme-toggle").addEventListener("click", async (event) => {
+  const next = theme() === "dark" ? "light" : "dark";
+  if (!document.startViewTransition || reduceMotion.matches) { setTheme(next); return; }
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+  const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  // The new page is live during the transition, so the 3D view redraws in the new light as it spreads.
+  const transition = document.startViewTransition(() => setTheme(next));
+  await transition.ready;
+  document.documentElement.animate(
+    { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+    { duration: 520, easing: "cubic-bezier(.3, .7, .4, 1)", pseudoElement: "::view-transition-new(root)" });
+});
 darkQuery.addEventListener("change", showTheme);
+
+/* ----- segmented controls -------------------------------------------------- */
+/* In a group that holds one choice, a thumb slides to the chosen option. */
+function initSegments() {
+  for (const seg of document.querySelectorAll(".seg:not([data-multi])")) {
+    const thumb = Object.assign(document.createElement("span"), { className: "seg-thumb" });
+    thumb.setAttribute("aria-hidden", "true");
+    seg.prepend(thumb);
+    seg.classList.add("has-thumb");
+    const place = (animate) => {
+      const pressed = seg.querySelector('button[aria-pressed="true"]');
+      thumb.style.opacity = pressed && pressed.offsetWidth ? "1" : "0";
+      if (!pressed || !pressed.offsetWidth) return;
+      if (!animate) thumb.style.transition = "none";
+      thumb.style.width = `${pressed.offsetWidth}px`;
+      thumb.style.transform = `translateX(${pressed.offsetLeft}px)`;
+      if (!animate) { void thumb.offsetWidth; thumb.style.transition = ""; }
+    };
+    new MutationObserver(() => place(true)).observe(seg, { subtree: true, attributeFilter: ["aria-pressed"] });
+    new ResizeObserver(() => place(false)).observe(seg);
+    place(false);
+  }
+}
 
 /* ----- sections --------------------------------------------------------- */
 const SECTIONS = ["helm", "telemetry", "mission", "checks"];
@@ -267,6 +307,7 @@ function connectStream() {
 }
 
 showTheme();
+initSegments();
 initHelm();
 initTelemetry();
 initMission();

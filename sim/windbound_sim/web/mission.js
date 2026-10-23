@@ -77,6 +77,8 @@ async function syncScene(sim) {
   await view.setScene(info);
   if (store.hello?.run === sim.run) view.setTrack(store.hello.track);
   text("view3d-meta", view.modelWarning || "");
+  // A paused or finished run sends no more snapshots, so place the boat from the last one now.
+  if (store.sim?.run === sim.run) showSim(store.sim);
 }
 
 async function loadScenarios() {
