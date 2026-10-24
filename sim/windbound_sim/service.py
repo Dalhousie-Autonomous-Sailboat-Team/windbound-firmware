@@ -28,6 +28,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from .autopilot import AutopilotStandIn
 from .groundstation import GroundStation, serial_ports
 from .link import GroundStationLink
 from .proof import Proof
@@ -109,13 +110,14 @@ def scene_for(sim, model_path):
 
 class WindboundService:
     def __init__(self, params, scenario="micmac-course", speed=5, host="127.0.0.1", port=DEFAULT_PORT,
-                 link_port=None, model_path=None):
+                 link_port=None, model_path=None, autopilot=AutopilotStandIn):
         if model_path is None and DEFAULT_MODEL_PATH.is_file():
             model_path = DEFAULT_MODEL_PATH
         self.model_path = Path(model_path) if model_path else None
         self.ground = GroundStation()
         self.tcp_link = GroundStationLink(port=link_port) if link_port is not None else None
-        self.runner = SimRunner(params, scenario, speed, ground=self.ground, link=self.tcp_link)
+        self.runner = SimRunner(params, scenario, speed, ground=self.ground, link=self.tcp_link,
+                                 autopilot=autopilot)
         self.proof = Proof(on_reloaded=self.runner.restart)
         lake_path = find_lake(MAP_LAKE)
         self.map_lake = Lake(lake_path) if lake_path else None

@@ -294,7 +294,9 @@ function showSim(sim) {
   linkPill($("m-xbee"), s.xbee_valid, s.xbee_age);
   linkPill($("m-rpi"), s.rpi_valid, s.rpi_age);
   text("fs-xbee", $("m-xbee").textContent);
-  text("fs-rpi", $("m-rpi").textContent);
+  const pilot = sim.autopilot || {};
+  text("m-rpi-sub", [pilot.name || "autopilot", pilot.mode, "times out after 10 s"].filter(Boolean).join(" · "));
+  text("fs-rpi", [$("m-rpi").textContent, pilot.mode].filter(Boolean).join(" · "));
 
   for (const toggle of document.querySelectorAll("[data-fault]")) {
     toggle.setAttribute("aria-checked", String(Boolean(s.faults[toggle.dataset.fault])));

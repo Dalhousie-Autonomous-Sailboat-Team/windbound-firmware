@@ -16,6 +16,7 @@ import queue
 import threading
 import time
 
+from .autopilot import AutopilotStandIn
 from .scenarios import SCENARIOS
 from .sim import CONTROL_PERIOD_MS, FAULTS, Simulation
 
@@ -28,8 +29,10 @@ AUTOPILOT_PERIODS_MS = (500, 1000, 2000, 5000)
 
 
 class SimRunner:
-    def __init__(self, params, scenario="micmac-course", speed=5, ground=None, link=None):
+    def __init__(self, params, scenario="micmac-course", speed=5, ground=None, link=None,
+                 autopilot=AutopilotStandIn):
         self.params = params
+        self.make_autopilot = autopilot
         self.ground = ground
         self.tcp_link = link
         self.speed = speed
@@ -110,7 +113,8 @@ class SimRunner:
     def _load(self, name):
         self.scenario = SCENARIOS[name]
         links = [l for l in (self.ground, self.tcp_link) if l is not None]
-        self.sim = Simulation(self.scenario, self.params, link=_Links(links) if links else None)
+        self.sim = Simulation(self.scenario, self.params, link=_Links(links) if links else None,
+                              autopilot=self.make_autopilot)
         self.run_id += 1
         self.finished = False
         self.running = True
@@ -185,6 +189,8 @@ class SimRunner:
             "finished": self.finished,
             "speed": self.speed,
             "autopilot_period_ms": sim.params.autopilot.period_ms,
+            "autopilot": {"name": self.make_autopilot.name,
+                          "mode": getattr(sim.autopilot, "mode", None)},
             "wind_spec": {"speed_ms": sim.wind.spec.speed_ms, "from_deg": sim.wind.spec.from_deg,
                           "gust_ms": sim.wind.spec.gust_ms},
             "origin": [sim.origin.lat, sim.origin.lon],

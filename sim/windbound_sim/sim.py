@@ -113,8 +113,11 @@ def find_lake(name):
 
 
 class Simulation:
-    def __init__(self, scenario: Scenario, params=None, link=None):
+    def __init__(self, scenario: Scenario, params=None, link=None, autopilot=AutopilotStandIn):
+        """``autopilot`` makes the Raspberry Pi's side, make(plan, origin): the
+        stand-in by default, or dalmast.factory() for the team's navigation."""
         self.scenario = scenario
+        self.make_autopilot = autopilot
         self.params = params or load_params()
         self.link = link
         rng = random.Random(scenario.seed)
@@ -132,7 +135,7 @@ class Simulation:
         self.encoder = SailEncoder(self.params)
         self.windvane = Windvane(self.params, rng)
         self.nav = NavSensors(self.params, rng)
-        self.autopilot = AutopilotStandIn(scenario.autopilot, self.origin) if scenario.autopilot else None
+        self.autopilot = autopilot(scenario.autopilot, self.origin) if scenario.autopilot else None
 
         self.now_ms = 0
         self.speed = None               # real-time multiplier while paced, None when headless
@@ -192,7 +195,7 @@ class Simulation:
     def set_waypoints(self, waypoints):
         """Give the autopilot a new route: ((lat, lon), ...), sailed in order."""
         plan = AutopilotPlan(waypoints=tuple((float(lat), float(lon)) for lat, lon in waypoints))
-        self.autopilot = AutopilotStandIn(plan, self.origin) if plan.waypoints else None
+        self.autopilot = self.make_autopilot(plan, self.origin) if plan.waypoints else None
 
     def step(self):
         t = self.now_ms

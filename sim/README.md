@@ -84,6 +84,23 @@ The sun and moon in the top bar switch between light (an afternoon on the
 lake) and dark (just after sunset). **Stop boat** silences both links, the
 only thing that makes the firmware stop the sail and centre the rudder.
 
+## Sail the team's own navigation
+
+By default a simple stand-in plays the Raspberry Pi. To sail DAL_MAST's real
+navigation and control code instead (it builds the same packets the Pi
+sends, and the firmware in the loop obeys them):
+
+```bash
+WINDBOUND_DALMAST_DIR=../DAL_MAST python3 sim/start.py --autopilot dalmast
+```
+
+It needs a DAL_MAST checkout whose `src/py_tut/py_tut` has `nav_core.py`,
+`control_law.py` and `pcb_protocol.py`, and is found on its own when
+`DAL_MAST` sits next to `windbound-firmware`. Mission control's Raspberry Pi
+row names which autopilot is sailing and what it's doing (reaching, beating
+on which tack). The ROS plumbing itself isn't run, only the code behind it;
+see `windbound_sim/dalmast.py`.
+
 ## Change the firmware, then prove it
 
 Edit anything under `User/`, then either:
@@ -192,6 +209,7 @@ boat, see `models/README.md`.
 | `windbound_sim/sensors.py` | AS5600 encoder, `$IIMWV` windvane, GPS and compass. |
 | `windbound_sim/world.py` | Wind with gusts and shifts, lat/lon, lake depth grids. |
 | `windbound_sim/autopilot.py` | Stand-in for the Raspberry Pi autopilot, speaking its UART7 protocol. |
+| `windbound_sim/dalmast.py` | DAL_MAST's own navigation and controls as the autopilot (`--autopilot dalmast`). |
 | `windbound_sim/link.py` | TCP stand-in for the joystick controller's serial port. |
 | `windbound_sim/service.py` | The web app's local server and its API. |
 | `windbound_sim/runner.py` | Runs the simulation in real time for the page, with its timeline and live checks. |

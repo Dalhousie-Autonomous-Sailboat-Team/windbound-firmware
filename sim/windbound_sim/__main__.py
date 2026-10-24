@@ -11,6 +11,7 @@ import argparse
 import sys
 import webbrowser
 
+from .autopilot import AutopilotStandIn
 from .link import DEFAULT_PORT as LINK_PORT
 from .link import GroundStationLink
 from .params import DEFAULT_PARAMS_PATH, load_params
@@ -32,9 +33,24 @@ def parse_settings(settings):
     return tables
 
 
+DALMAST_PERIOD_MS = 500        # PCBComm's write_period_s on fix/pcb-link
+
+
 def load(args):
     params = load_params(args.params)
+    if getattr(args, "autopilot", None) == "dalmast":
+        params = params.with_changes(autopilot={"period_ms": DALMAST_PERIOD_MS})
     return params.with_changes(**parse_settings(args.set)) if args.set else params
+
+
+def autopilot(args):
+    if args.autopilot == "standin":
+        return AutopilotStandIn
+    from .dalmast import factory
+    try:
+        return factory()
+    except FileNotFoundError as error:
+        sys.exit(f"{error}")
 
 
 def main(argv=None):
@@ -47,6 +63,9 @@ def main(argv=None):
     common.add_argument("--params", default=DEFAULT_PARAMS_PATH, help="boat parameter file")
     common.add_argument("--set", action="append", default=[], metavar="TABLE.KEY=VALUE",
                         help="override one parameter, e.g. autopilot.period_ms=1000")
+    common.add_argument("--autopilot", choices=["standin", "dalmast"], default="standin",
+                        help="the Raspberry Pi's side: the simple stand-in, or DAL_MAST's own "
+                             "navigation (found at $WINDBOUND_DALMAST_DIR or ../DAL_MAST)")
 
     serve = sub.add_parser("serve", parents=[common], help="run the web app")
     serve.add_argument("--scenario", choices=sorted(SCENARIOS), default="micmac-course")
@@ -75,7 +94,8 @@ def main(argv=None):
     if args.command == "serve":
         speed = args.speed if args.speed == "max" else int(args.speed)
         service = WindboundService(load(args), args.scenario, speed, port=args.port,
-                                   link_port=args.link_port or None, model_path=args.model)
+                                   link_port=args.link_port or None, model_path=args.model,
+                                   autopilot=autopilot(args))
         print(f"\n  Windbound is running at {service.url}")
         if service.tcp_link:
             print(f"  Desktop ground station: connect it to {service.tcp_link.url}")
@@ -95,7 +115,7 @@ def main(argv=None):
     if args.link:
         link = GroundStationLink(port=args.port)
         print(f"Ground station: connect to {link.url}")
-    sim = Simulation(scenario, load(args), link=link)
+    sim = Simulation(scenario, load(args), link=link, autopilot=autopilot(args))
     if scenario.lake and sim.lake is None:
         print(f"Note: no depth grid found for {scenario.lake}; depth checks are off. "
               "Set WINDBOUND_LAKE_DIR to the ground station's lake_depth_maps folder.")

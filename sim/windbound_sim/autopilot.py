@@ -57,6 +57,8 @@ class AutopilotPlan:
 
 
 class AutopilotStandIn:
+    name = "Stand-in autopilot"
+
     def __init__(self, plan: AutopilotPlan, origin):
         self.plan = plan
         self.origin = origin
