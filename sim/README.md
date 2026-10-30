@@ -136,7 +136,8 @@ A test marked `xfail(strict=True)` describes how the boat *should* behave and
 fails today because of a known firmware problem; its reason says which. When
 you fix the firmware, that test starts passing, pytest flags the XPASS, and
 you remove the marker in the same change. GitHub runs all of this on every
-push (`.github/workflows/host-tests.yml`).
+push (`.github/workflows/host-tests.yml`). The known problems, in plain
+English with a fix idea for each, are in [KNOWN_ISSUES.md](../KNOWN_ISSUES.md).
 
 ## Use it with the real boat
 

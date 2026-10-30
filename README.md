@@ -14,6 +14,8 @@ python3 sim/start.py
 
 opens the simulator and ground station in your browser: this firmware sailing a simulated Windbound on Lake Micmac, the joystick's GUI, and a button that rebuilds the firmware and runs every test against it. See [sim/README.md](sim/README.md) for what to install first and a five-minute tour.
 
+**Known bugs:** [KNOWN_ISSUES.md](KNOWN_ISSUES.md) lists the 8 things the firmware gets wrong today, worst first, with a fix idea and a test for each.
+
 ## Project Structure
 
 - `cmake/`: CubeMX generated CMake files
