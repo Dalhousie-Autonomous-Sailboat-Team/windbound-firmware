@@ -6,7 +6,7 @@ way its ROS nodes do:
 
     waypointControl   a waypoint counts as reached inside the gate
     navigation        nav_core.guide(): the heading to steer
-    controls          control_law: rudder from the heading error, wing side
+    controls          control_law: rudder from the heading error, the wing's angle
     PCBComm           pcb_protocol.format_targets(): the TargetsOutput line
 
 so the STM32 firmware in the loop receives exactly the packets the Pi would
@@ -118,13 +118,15 @@ class DalmastAutopilot:
             a = waypoints[self.waypoint_index - 1] if self.waypoint_index else self.start
             to_xy = lambda p: self.nav.to_local(p[0], p[1], a[0], a[1])
             guidance = self.nav.guide(self.config, self.state, now_s, to_xy((lat, lon)), heading,
-                                      wind_from, (0.0, 0.0), to_xy((target_lat, target_lon)))
+                                      wind_from, (0.0, 0.0), to_xy((target_lat, target_lon)),
+                                      vane_cw=wind_angle)
             target = guidance.heading
-            self.mode = guidance.mode if guidance.mode == "reaching" else \
-                f"beating, {'starboard' if guidance.tack > 0 else 'port'} tack"
+            tack = "starboard" if guidance.tack > 0 else "port"
+            self.mode = ("reaching" if guidance.mode == "reaching"
+                         else f"tacking onto {tack}" if self.state.tacking_since is not None
+                         else f"beating, {tack} tack")
             rudder = self.law.rudder_command(heading, target, self.rate, RUDDER_KP, RUDDER_KD, MAX_RUDDER_DEG)
-            self.side = self.law.wing_side(wind_angle, self.side)
-            sail = (wind_angle + self.side * self.law.angle_of_attack) % 360.0
+            sail, self.side = self.law.sail_target(wind_angle, heading, target, self.side)
 
         packet = self.pcb.format_targets({
             "targetBearing": target, "waypointLat": target_lat, "waypointLon": target_lon,
