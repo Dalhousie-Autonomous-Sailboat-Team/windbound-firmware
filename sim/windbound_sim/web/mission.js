@@ -19,6 +19,7 @@ let sceneRun = null;
 let dial, bar, compass;
 let lastRoute = "";
 let lastDraw = 0;
+let drawTimer = 0;
 const DRAW_INTERVAL_MS = 100;   // panels redraw at 10 Hz; the 3D view takes every snapshot
 const ICONS = { pause: "pause", play: "play", again: "restart", enter: "expand", leave: "shrink" };   // names in the icon set
 const setIcon = (id, name) => { $(id).outerHTML = ic(ICONS[name], "", id); };
@@ -42,7 +43,7 @@ export function initMission() {
   on("proof", showFirmware);
   on("theme", (name) => view?.setTheme(name));
   on("section", (name) => {
-    if (name === "mission") ensureView().then(() => view?.start());
+    if (name === "mission") { drawPanels(); ensureView().then(() => view?.start()); }
     else { view?.stop(); leaveFullscreen(); }
   });
 }
@@ -225,9 +226,18 @@ function showSim(sim) {
       if (s.waypoint) view.course.progress(s.waypoint.index, s.waypoint.reached);
     }
   }
-  const now = performance.now();
-  if (section !== "mission" || now - lastDraw < DRAW_INTERVAL_MS) return;
-  lastDraw = now;
+  // A snapshot that comes too soon after the last redraw is drawn when the interval is up, so a run's
+  // last one (finished, paused), after which nothing more arrives, always reaches the page.
+  if (!drawTimer) drawTimer = setTimeout(drawPanels, Math.max(0, lastDraw + DRAW_INTERVAL_MS - performance.now()));
+}
+
+function drawPanels() {
+  clearTimeout(drawTimer);
+  drawTimer = 0;
+  const sim = store.sim;
+  if (section !== "mission" || !sim) return;
+  lastDraw = performance.now();
+  const s = sim.state;
 
   const [line, alert] = finding(sim);
   text("mission-finding", line).classList.toggle("alert", alert);
