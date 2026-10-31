@@ -12,6 +12,9 @@ web/. The page talks to it over:
     GET  /api/scene       the running scenario: boat dimensions, course, lake
     GET  /api/map         the lake's depth grid for the 2D map
     GET  /api/scenarios   GET /api/ports     GET /boat.glb
+    GET  /api/info        {"app": "windbound-sim", "link_port": ...}, so the
+                          ground station can find this service and show its
+                          screens (the page embeds with ?embed)
     POST /api/sim         {"action": ...}  run, speed, wind, faults, joystick, route
     POST /api/ground      {"action": "connect", "url": ..., "baud": ...} or "simulator"
     POST /api/firmware    {"action": "rebuild" | "check" | "watch", ...}
@@ -19,7 +22,8 @@ web/. The page talks to it over:
 It listens on 127.0.0.1 only, answers only requests addressed to it by that
 name (so a site that rebinds its own name to 127.0.0.1 can't read it), and
 takes commands only as JSON from its own page, so another website can't
-rebuild the firmware or move the boat.
+rebuild the firmware or move the boat. Only pages on this computer may frame
+the page (the ground station embeds Mission control and Firmware checks).
 """
 
 import json
@@ -45,6 +49,9 @@ STREAM_HZ = 30
 SCENE_CELL_M = 12.0
 MAP_CELL_M = 4.0
 MAX_BODY = 64 * 1024
+# Who may show the page in a frame: itself and other local pages, such as the
+# ground station's web UI on its own port. Nothing on the internet.
+FRAME_ANCESTORS = "frame-ancestors 'self' http://127.0.0.1:* http://localhost:*"
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
                  ".js": "text/javascript; charset=utf-8", ".svg": "image/svg+xml",
                  ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8"}   # the bundled Geist and its licence
@@ -220,6 +227,9 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(service.scenarios())
         elif path == "/api/ports":
             self._json(serial_ports())
+        elif path == "/api/info":
+            link = service.tcp_link
+            self._json({"app": "windbound-sim", "link_port": link.port if link else None})
         elif path == "/boat.glb":
             model = service.model_path
             if model and model.is_file():
@@ -231,7 +241,8 @@ class _Handler(BaseHTTPRequestHandler):
             name = "index.html" if path == "/" else path.lstrip("/")
             file = WEB_DIR / name
             if "/" not in name and file.suffix in CONTENT_TYPES and file.is_file():
-                self._send(200, CONTENT_TYPES[file.suffix], file.read_bytes())
+                policy = {"Content-Security-Policy": FRAME_ANCESTORS} if file.suffix == ".html" else {}
+                self._send(200, CONTENT_TYPES[file.suffix], file.read_bytes(), headers=policy)
             else:
                 self._send(404, "text/plain", b"Not found")
 
@@ -271,11 +282,13 @@ class _Handler(BaseHTTPRequestHandler):
     def _json(self, data, status=200):
         self._send(status, "application/json", json.dumps(data).encode())
 
-    def _send(self, status, content_type, body, cache=False):
+    def _send(self, status, content_type, body, cache=False, headers=None):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "max-age=3600" if cache else "no-store")
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(body)
 

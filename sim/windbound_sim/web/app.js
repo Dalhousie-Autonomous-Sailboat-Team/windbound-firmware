@@ -17,6 +17,19 @@ const $ = (id) => document.getElementById(id);
 hydrate();     // <i data-ic> become the icon set's SVGs before anything looks them up
 export { toast };
 
+/* ----- inside the ground station ------------------------------------------ */
+/* With ?embed the page shows only the simulator's screens, inside the
+   ground station's web UI, which draws the bar and the tabs around them.
+   They talk by message, only with the local page named in ?parent: it sends
+   the theme and the screen to show; this page sends the screen it moved to,
+   its failing-check count, and ⌘K. */
+export const embedded = document.documentElement.hasAttribute("data-embed");
+const parentOrigin = (() => {
+  const named = new URLSearchParams(location.search).get("parent") || "";
+  return embedded && /^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(named) ? named : null;
+})();
+const tellParent = (type, data = {}) => { if (parentOrigin) window.parent.postMessage({ type, ...data }, parentOrigin); };
+
 /* ----- the live store --------------------------------------------------- */
 export const store = { hello: null, sim: null, ground: null, groundAt: 0, proof: null };
 const listeners = { sim: [], ground: [], proof: [], hello: [], theme: [], section: [] };
@@ -67,6 +80,7 @@ function showTheme() {
 function setTheme(choice) {
   if (choice === "system") delete document.documentElement.dataset.theme;
   else document.documentElement.dataset.theme = choice;
+  if (embedded) { showTheme(); return; }      // the ground station keeps the choice
   try {
     if (choice === "system") localStorage.removeItem("windbound-theme");
     else localStorage.setItem("windbound-theme", choice);
@@ -118,7 +132,7 @@ function initSegments() {
 }
 
 /* ----- sections --------------------------------------------------------- */
-const SECTIONS = ["helm", "telemetry", "mission", "checks"];
+const SECTIONS = embedded ? ["mission", "checks"] : ["helm", "telemetry", "mission", "checks"];
 const TITLES = { helm: "Helm", telemetry: "Telemetry", mission: "Mission control", checks: "Firmware checks" };
 export let section = null;
 
@@ -139,6 +153,7 @@ function showSection() {
   }
   document.title = `${TITLES[section]} · Windbound`;
   window.scrollTo(0, 0);
+  tellParent("windbound:section", { name: section });
   emit("section", section);
 }
 window.addEventListener("hashchange", showSection);
@@ -214,7 +229,8 @@ document.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
     event.preventDefault();
-    if (cmdkOpen()) closeCmdk(); else { closeConnection(); if (shortcuts.open) shortcuts.close(); openCmdk(); }
+    if (parentOrigin) tellParent("windbound:cmdk");        // the ground station's menu
+    else if (cmdkOpen()) closeCmdk(); else { closeConnection(); if (shortcuts.open) shortcuts.close(); openCmdk(); }
     return;
   }
   if (event.key === "Escape") closeConnection();
@@ -302,6 +318,7 @@ function connectStream() {
   });
   stream.addEventListener("proof", (event) => {
     store.proof = JSON.parse(event.data);
+    tellParent("windbound:checks", { failing: store.proof.checks.results.filter((r) => r.outcome === "failed").length });
     emit("proof", store.proof);
   });
   stream.onerror = () => {
@@ -355,6 +372,17 @@ $("search").addEventListener("click", openCmdk);
 if (!/Mac|iPhone|iPad/.test(navigator.platform)) {
   $("cmd-key").textContent = "Ctrl K";
   for (const k of document.querySelectorAll(".cmd-mod")) k.textContent = "Ctrl";
+}
+
+if (embedded) {
+  // No bar of its own, so Stop sits with the run's other controls.
+  document.querySelector("#view-mission .title-actions").append($("stop"));
+  window.addEventListener("message", (event) => {
+    if (!parentOrigin || event.source !== window.parent || event.origin !== parentOrigin) return;
+    const { type, theme: choice, name } = event.data || {};
+    if (type === "windbound:theme" && ["system", "light", "dark"].includes(choice)) setTheme(choice);
+    else if (type === "windbound:section" && SECTIONS.includes(name) && name !== section) location.hash = `#${name}`;
+  });
 }
 
 showTheme();

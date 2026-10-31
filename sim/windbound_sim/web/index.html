@@ -6,10 +6,13 @@
   <title>Windbound</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <script>
-    /* Apply the saved theme before first paint so the page never flashes the other one. */
+    /* Apply the theme before first paint so the page never flashes the other one:
+       the saved one, or inside the ground station (?embed) the one it passes. */
     try {
-      const saved = localStorage.getItem("windbound-theme");
-      if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+      const root = document.documentElement, params = new URLSearchParams(location.search);
+      if (params.has("embed")) root.dataset.embed = "";
+      const theme = params.has("embed") ? params.get("theme") : localStorage.getItem("windbound-theme");
+      if (theme === "light" || theme === "dark") root.dataset.theme = theme;
     } catch (e) {}
   </script>
   <link rel="preload" href="/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>

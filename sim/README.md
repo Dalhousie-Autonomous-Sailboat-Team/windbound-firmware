@@ -152,6 +152,13 @@ English with a fix idea for each, are in [KNOWN_ISSUES.md](../KNOWN_ISSUES.md).
   it also speaks the joystick controller's serial protocol on
   `socket://127.0.0.1:5760`. In the desktop ground station, pick **Simulator —
   socket://127.0.0.1:5760** from the COM port list and click **Connect**.
+- **The ground station's web UI with the simulator, in one window.** In
+  simpleSailboatGUI, `python windbound_web.py --simulator` starts this
+  simulator too (from the windbound-firmware checkout next to it) and connects
+  to it. Mission control and Firmware checks then appear as tabs in the
+  ground station: they are this page, embedded (it shows only those two
+  screens when opened with `?embed`). Only pages on this computer may embed
+  it.
 
 ## If something goes wrong
 

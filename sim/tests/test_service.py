@@ -62,6 +62,27 @@ def test_serves_nothing_outside_its_web_folder(service, path):
     assert request(service, "GET", path)[0] == 404
 
 
+def test_says_what_it_is_so_the_ground_station_can_find_it(params):
+    service = WindboundService(params, scenario="sail-step", speed=1, port=0, link_port=0)
+    threading.Thread(target=service.serve_forever, daemon=True).start()
+    try:
+        status, body = request(service, "GET", "/api/info")
+        assert status == 200
+        assert json.loads(body) == {"app": "windbound-sim", "link_port": service.tcp_link.port}
+    finally:
+        service.close()
+
+
+def test_only_pages_on_this_computer_may_frame_it(service):
+    conn = http.client.HTTPConnection(service.host, service.port, timeout=5)
+    conn.request("GET", "/")
+    response = conn.getresponse()
+    response.read()
+    conn.close()
+    policy = response.getheader("Content-Security-Policy")
+    assert policy == "frame-ancestors 'self' http://127.0.0.1:* http://localhost:*"
+
+
 def test_reports_the_scenario_and_the_lake(service):
     status, body = request(service, "GET", "/api/scene")
     scene = json.loads(body)

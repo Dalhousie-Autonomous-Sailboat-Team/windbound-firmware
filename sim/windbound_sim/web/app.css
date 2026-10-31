@@ -299,6 +299,9 @@ input[type="range"]:disabled { cursor: not-allowed; opacity: .55; }
 .tab .count:empty { display: none; }
 /* Helm and Telemetry are the ground station's; Mission control and Firmware checks the simulator's. */
 .tab-sep { flex: none; width: 1px; margin: 13px 6px; background: var(--border); }
+/* Inside the ground station (?embed), which draws the bar and the tabs. */
+:root[data-embed] .top { position: static; border-bottom: 0; }
+:root[data-embed] .bar1, :root[data-embed] .tabs { display: none; }
 .lost { display: flex; align-items: center; gap: 10px; padding: 8px max(var(--gutter), env(safe-area-inset-left, 0px)); background: var(--warn-bg); color: var(--warn-ink); font-size: 12.5px; border-top: 1px solid var(--border); }
 .lost code { font-size: 12px; }
 
