@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Windbound</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <script>
@@ -12,9 +12,7 @@
       if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
     } catch (e) {}
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preload" href="/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/app.css">
   <script type="importmap">
     {
@@ -26,483 +24,459 @@
   </script>
 </head>
 <body class="pending">
-<div class="app">
-  <aside class="sidebar" id="sidebar" aria-label="Windbound">
-    <div class="brand">
-      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path class="mark-a" d="M12.5 2.5c4.2 3.6 5.6 9.2 4.2 15.5H12.5z"/><path class="mark-b" d="M11 5.5 7.2 18H11z"/><path class="mark-c" d="M3.5 20.5c5.5 1.6 11.5 1.6 17 0"/></svg>
-      <strong>Windbound</strong>
-    </div>
-    <button class="scope" type="button" data-open-connection aria-label="Choose where the ground station listens">
-      <span class="dot" id="scope-dot" aria-hidden="true"></span>
-      <span class="scope-text"><span class="s1" id="scope-1">Simulated boat</span><span class="s2" id="scope-2">This service</span></span>
-      <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 6l3-3 3 3M5 10l3 3 3-3" class="icon-stroke"/></svg>
+<header class="top" id="top">
+  <div class="bar1 wrapx">
+    <a class="brand" href="#mission" aria-label="Windbound, Mission control">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.6 2.2 20 17.2h-7.4z" fill="currentColor"/><path d="M11.2 6.4 5.2 17.2h6z" fill="currentColor" opacity=".5"/><path d="M3.2 18.8h17.6l-1.9 2.6H5.1z" fill="currentColor"/></svg>
+      <span>Windbound</span>
+    </a>
+    <svg class="slash" viewBox="0 0 16 22" aria-hidden="true"><path d="M11 3 5 19" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    <button class="crumb ica" type="button" id="conn" data-open-connection aria-haspopup="dialog" aria-expanded="false" aria-controls="connection" title="Where the ground station listens">
+      <span class="dot sim" id="conn-dot" aria-hidden="true"></span><span id="conn-name">Simulator</span><span class="meta" id="conn-detail">this service</span><i data-ic="updown"></i>
     </button>
-    <p class="group-label">Ground station</p>
-    <a class="nav-item" href="#helm" data-section="helm">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" class="icon-stroke"/><circle cx="8" cy="8" r="1.6" class="icon-fill"/><path d="M8 2.5v3.9M8 9.6v3.9M2.5 8h3.9M9.6 8h3.9" class="icon-stroke"/></svg>Helm</a>
-    <a class="nav-item" href="#telemetry" data-section="telemetry">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8.5h3l2-5 3 9 2-4h3" class="icon-stroke"/></svg>Telemetry</a>
-    <p class="group-label">Simulator</p>
-    <a class="nav-item" href="#mission" data-section="mission">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 13.5 5v6L8 14.2 2.5 11V5zM2.5 5 8 8.2 13.5 5M8 8.2v6" class="icon-stroke"/></svg>Mission control</a>
-    <a class="nav-item" href="#checks" data-section="checks">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8.5 6 12l7.5-8" class="icon-stroke"/></svg>Firmware checks<span class="count num" id="nav-checks-count"></span></a>
-    <div class="side-foot">
-      <p class="side-note" id="side-note"></p>
+    <span class="pill sim-chip" id="sim-chip"><i data-ic="cube"></i>Simulated</span>
+    <div class="bar1-right">
+      <button class="search ica" type="button" id="search" aria-label="Search or run a command"><i data-ic="search"></i><span class="t">Search or run a command</span><kbd id="cmd-key">⌘K</kbd></button>
+      <button class="btn ghost icon ica tip" type="button" id="shortcuts-open" aria-label="Keyboard shortcuts" data-tip="Shortcuts · ?"><i data-ic="keyboard"></i></button>
+      <div class="theme" role="radiogroup" aria-label="Theme">
+        <button class="ica tip" type="button" role="radio" data-theme-set="system" aria-checked="true" aria-label="System theme" data-tip="System"><i data-ic="monitor"></i></button>
+        <button class="ica tip" type="button" role="radio" data-theme-set="light" aria-checked="false" aria-label="Light theme" data-tip="Light"><i data-ic="sun"></i></button>
+        <button class="ica tip" type="button" role="radio" data-theme-set="dark" aria-checked="false" aria-label="Dark theme" data-tip="Dark"><i data-ic="moon"></i></button>
+      </div>
+      <button class="stop-top ica" type="button" id="stop"><i data-ic="stop"></i><span id="stop-label">Stop boat</span></button>
     </div>
-  </aside>
-
-  <div class="main">
-    <header class="topbar">
-      <button class="btn ghost icon menu" type="button" id="menu" aria-label="Open navigation" aria-expanded="false">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" class="icon-stroke"/></svg></button>
-      <strong class="brand-sm">Windbound</strong>
-      <button class="conn" type="button" data-open-connection aria-haspopup="dialog">
-        <span class="dot" id="conn-dot" aria-hidden="true"></span><b id="conn-name">Simulator</b><span class="conn-detail" id="conn-detail">this service</span>
-        <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" class="icon-stroke"/></svg>
-      </button>
-      <span class="pill neg offline-pill" id="offline" role="status" hidden>Reconnecting to the service…</span>
-      <span class="spacer"></span>
-      <span class="sim-chip" id="sim-chip">Simulated</span>
-      <button class="btn ghost icon" type="button" id="shortcuts-open" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5" class="icon-stroke"/><path d="M4 6.5h.01M6.5 6.5h.01M9 6.5h.01M11.5 6.5h.01M4.5 9.5h7" class="icon-stroke"/></svg>
-      </button>
-      <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Dark theme" aria-pressed="false" title="Switch to the dark theme">
-        <svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3" class="icon-stroke"/><path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" class="icon-stroke"/></svg>
-        <svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.2 10.2A5.6 5.6 0 0 1 5.8 2.8a5.6 5.6 0 1 0 7.4 7.4Z" class="icon-stroke"/></svg>
-      </button>
-      <button class="stop-top" type="button" id="stop">
-        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2h8l6 6v8l-6 6H8l-6-6V8z" class="stop-outline"/><path d="M8 12h8" class="stop-bar"/></svg>
-        <span id="stop-label">Stop boat</span>
-      </button>
-    </header>
-
-    <main class="sheet" id="sheet">
-      <!-- ===================================================== Helm -->
-      <section class="view" id="view-helm" data-view="helm" aria-labelledby="helm-h" hidden>
-        <div class="title-row">
-          <div>
-            <h1 id="helm-h">Helm</h1>
-            <p class="sub" id="helm-finding">Waiting for the controller</p>
-          </div>
-          <div class="title-actions">
-            <span class="stamp num" id="helm-stamp"><span class="dot" aria-hidden="true"></span>No telemetry yet</span>
-          </div>
-        </div>
-
-        <section class="strip" aria-label="Links and mode">
-          <div class="cell">
-            <div class="label">Controller</div>
-            <div class="value num"><span id="gs-rate">0</span><small>lines/s</small></div>
-            <div class="note num" id="gs-rate-note">USB · 0 dropped · 0 overruns</div>
-          </div>
-          <div class="cell">
-            <div class="label">XBee commands</div>
-            <div class="value num"><span id="gs-xbee">—</span><small id="gs-xbee-unit">s · limit 2.0 s</small></div>
-            <div class="meter" aria-hidden="true"><i id="gs-xbee-meter"></i></div>
-            <div class="note" id="gs-xbee-note"></div>
-          </div>
-          <div class="cell">
-            <div class="label">Telemetry</div>
-            <div class="value num"><span id="gs-tel">—</span><small>s · stale at 2.5 s</small></div>
-            <div class="meter" aria-hidden="true"><i id="gs-tel-meter"></i></div>
-          </div>
-          <div class="cell">
-            <div class="label">Autopilot</div>
-            <div class="value num"><span id="gs-rpi">—</span><small id="gs-rpi-unit">s · limit 10 s</small></div>
-            <div class="meter" aria-hidden="true"><i id="gs-rpi-meter"></i></div>
-            <div class="note" id="gs-rpi-note"></div>
-          </div>
-          <div class="cell">
-            <div class="label">Boat mode</div>
-            <div class="value">Autonomous</div>
-            <div class="note">Fixed in firmware for now</div>
-          </div>
-        </section>
-
-        <div class="cols">
-          <section class="panel fill" aria-labelledby="map-h">
-            <header>
-              <div class="head-title"><h2 id="map-h">Lake Micmac</h2><span class="meta hide-phone">depth from the NS lake inventory, approximate</span></div>
-              <div class="seg" role="group" aria-label="Map shading">
-                <button type="button" data-map-base="depth" aria-pressed="true">Depth</button>
-                <button type="button" data-map-base="plain" aria-pressed="false">Plain</button>
-              </div>
-            </header>
-            <div class="mapgrid grow">
-              <div class="map" id="map">
-                <canvas id="map-canvas" aria-label="Map of Lake Micmac with the route and the boat. Click to add a waypoint."></canvas>
-                <div class="map-tools">
-                  <button type="button" id="map-zoom-in" aria-label="Zoom in"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" class="icon-stroke"/></svg></button>
-                  <button type="button" id="map-zoom-out" aria-label="Zoom out"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9" class="icon-stroke"/></svg></button>
-                  <button type="button" id="map-centre" aria-label="Centre on the boat"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="4" class="icon-stroke"/><path d="M8 1.5v2.5M8 12v2.5M1.5 8H4M12 8h2.5" class="icon-stroke"/></svg></button>
-                </div>
-                <div class="map-card legend" id="map-legend">
-                  <div><svg viewBox="0 0 28 8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" class="lg-clear"/></svg>2.5 m or deeper</div>
-                  <div><svg viewBox="0 0 28 8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" class="lg-caution"/></svg>2.0 to 2.5 m</div>
-                  <div><svg viewBox="0 0 28 8" aria-hidden="true"><line x1="3" y1="4" x2="26" y2="4" class="lg-shallow"/></svg><span id="lg-draft">Under the 2.0 m draft</span></div>
-                  <div id="lg-track-row"><svg viewBox="0 0 28 8" aria-hidden="true"><line x1="3" y1="4" x2="26" y2="4" class="lg-track"/></svg><span id="lg-track">Track</span></div>
-                </div>
-                <p class="map-empty" id="map-empty" hidden>No depth map. Set WINDBOUND_LAKE_DIR to the ground station's lake_depth_maps folder and restart the service.</p>
-              </div>
-              <div class="route">
-                <div class="route-head"><h3>Route</h3><span class="pill" id="route-pill" hidden></span></div>
-                <ol id="route-list"></ol>
-                <p class="route-note" id="route-note">Click the map to add a waypoint. Drag one to move it.</p>
-                <div class="route-foot">
-                  <button class="btn" type="button" id="route-restore">Restore</button>
-                  <button class="btn primary" type="button" id="route-send">Send route</button>
-                </div>
-              </div>
-            </div>
-            <div class="instruments">
-              <div><div class="k">Heading</div><div class="v num" id="in-heading">—</div></div>
-              <div><div class="k">Target bearing</div><div class="v num" id="in-bearing">—</div></div>
-              <div><div class="k">Apparent wind</div><div class="v num" id="in-wind">—</div></div>
-              <div><div class="k">Position</div><div class="v num pos" id="in-position">—</div><div class="k" id="in-position-note"></div></div>
-            </div>
-          </section>
-
-          <section class="panel fill" aria-labelledby="cmd-h">
-            <header>
-              <h2 id="cmd-h">Commands</h2>
-              <div class="seg" role="group" aria-label="Who sends commands">
-                <button type="button" data-helm-source="joystick" aria-pressed="true">Joystick</button>
-                <button type="button" data-helm-source="laptop" aria-pressed="false">This laptop</button>
-              </div>
-            </header>
-            <div class="boat-fig">
-              <svg width="104" height="104" viewBox="0 0 200 200" id="helm-fig" role="img" aria-label="The boat from above: the solid sail is where the encoder says it is, the dashed one is the target"></svg>
-              <div>
-                <p class="fig-title" id="helm-tack">—</p>
-                <p class="hint" id="helm-hint">The joystick has the helm. The sliders show its last packet.</p>
-              </div>
-            </div>
-            <div class="axis">
-              <div class="axis-head"><label for="sail">Sail</label><output for="sail" class="num" id="sail-out">0°</output></div>
-              <input id="sail" type="range" min="-90" max="90" step="1" value="0">
-              <div class="ticks num"><span>−90°</span><span>−45°</span><span>0°</span><span>+45°</span><span>+90°</span></div>
-              <div class="chain">
-                <div class="step"><div class="k">You sent</div><div class="v num" id="sail-sent">—</div></div>
-                <div class="arrow" aria-hidden="true">›</div>
-                <div class="step"><div class="k">Boat uses</div><div class="v num" id="sail-uses">—</div></div>
-                <div class="arrow" aria-hidden="true">›</div>
-                <div class="step"><div class="k">Sail now</div><div class="v num" id="sail-now">—</div></div>
-              </div>
-              <p class="why" id="sail-why" hidden></p>
-            </div>
-            <div class="axis">
-              <div class="axis-head"><label for="rudder">Rudder</label><output for="rudder" class="num" id="rudder-out">0°</output></div>
-              <input id="rudder" type="range" min="-45" max="45" step="1" value="0">
-              <div class="ticks num"><span>45° port</span><span>0°</span><span>45° stbd</span></div>
-              <div class="chain">
-                <div class="step"><div class="k">You sent</div><div class="v num" id="rudder-sent">—</div></div>
-                <div class="arrow" aria-hidden="true">›</div>
-                <div class="step"><div class="k">Boat uses</div><div class="v num" id="rudder-uses">—</div></div>
-                <div class="arrow" aria-hidden="true">›</div>
-                <div class="step"><div class="k">Servo pulse</div><div class="v num" id="rudder-pulse">—</div></div>
-              </div>
-              <p class="why" id="rudder-why" hidden></p>
-            </div>
-            <div class="keys">
-              <span><kbd>W</kbd> <kbd>S</kbd> sail</span><span><kbd>A</kbd> <kbd>D</kbd> rudder</span><span><kbd>Shift</kbd> steps 5°</span><span><kbd>X</kbd> stop sending</span>
-              <span class="pad" id="gamepad-state">No gamepad. Connect one and press a button.</span>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <!-- ===================================================== Telemetry -->
-      <section class="view" id="view-telemetry" data-view="telemetry" aria-labelledby="tel-h" hidden>
-        <div class="title-row">
-          <div>
-            <h1 id="tel-h">Telemetry</h1>
-            <p class="sub" id="tel-sub">What the boat sends back over the XBee, once a second.</p>
-          </div>
-          <div class="title-actions">
-            <button class="btn" type="button" id="log-download">Download log</button>
-          </div>
-        </div>
-        <div class="cols tel">
-          <section class="panel" aria-labelledby="packet-h">
-            <header><h2 id="packet-h">Latest packet</h2><span class="meta num" id="packet-meta"></span></header>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>Field</th><th>Key</th><th class="n">Value</th><th>What to know</th></tr></thead>
-                <tbody id="packet-rows"></tbody>
-              </table>
-            </div>
-            <p class="raw num" id="packet-raw"></p>
-          </section>
-          <section class="panel fill" aria-labelledby="log-h">
-            <header>
-              <h2 id="log-h">Serial log</h2>
-              <div class="seg" role="group" aria-label="Which lines">
-                <button type="button" data-log-filter="all" aria-pressed="true">All</button>
-                <button type="button" data-log-filter="telemetry" aria-pressed="false">Telemetry</button>
-                <button type="button" data-log-filter="controller" aria-pressed="false">Controller</button>
-              </div>
-            </header>
-            <pre class="log grow" id="log" tabindex="0" aria-label="Serial log"></pre>
-            <div class="field-row">
-              <span class="hint num" id="log-count">0 lines</span>
-              <button class="btn" type="button" id="log-pause" aria-pressed="false">Pause</button>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <!-- ===================================================== Mission control -->
-      <section class="view" id="view-mission" data-view="mission" aria-labelledby="mission-h" hidden>
-        <div class="title-row">
-          <div>
-            <h1 id="mission-h">Mission control</h1>
-            <p class="sub" id="mission-finding">Starting the simulator</p>
-          </div>
-          <div class="title-actions">
-            <label for="scenario" class="visually-hidden">Scenario</label>
-            <select id="scenario" class="btn select"></select>
-            <button class="btn icon" type="button" id="sim-restart" aria-label="Restart the scenario" title="Restart the scenario">
-              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3v4h4M3.9 6.8A5 5 0 1 1 3.2 9.5" class="icon-stroke"/></svg></button>
-          </div>
-        </div>
-
-        <div class="cols mission">
-          <section class="panel run" id="run" aria-labelledby="run-h">
-            <header>
-              <div class="head-title">
-                <h2 id="run-h">The boat</h2>
-                <span class="meta bad" id="view3d-meta"></span>
-                <span class="meta fs-only" id="run-finding"></span>
-              </div>
-              <div class="head-controls">
-                <div class="seg" role="group" aria-label="Camera">
-                  <button type="button" data-camera="orbit" aria-pressed="true" title="Stay with the boat; drag to look from any side (1)">Orbit</button>
-                  <button type="button" data-camera="chase" aria-pressed="false" title="Sit behind the boat and turn with it (2)">Chase</button>
-                  <button type="button" data-camera="top" aria-pressed="false" title="Look straight down at the depth chart, north up (3)">Top</button>
-                </div>
-                <div class="seg" role="group" aria-label="Show on the boat" data-multi>
-                  <button type="button" data-vectors="forces" aria-pressed="false" title="Forces on the wing, keel, rudder and hull">Forces</button>
-                  <button type="button" data-vectors="wind" aria-pressed="false" title="True and apparent wind">Wind</button>
-                  <button type="button" data-vectors="motion" aria-pressed="false" title="Velocity and leeway">Motion</button>
-                </div>
-                <button class="btn icon" type="button" id="fullscreen" aria-pressed="false" aria-label="Full screen" title="Full screen (F)">
-                  <svg viewBox="0 0 16 16" aria-hidden="true" id="fullscreen-icon"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" class="icon-stroke"/></svg>
-                </button>
-              </div>
-            </header>
-            <div class="stage" id="stage">
-              <canvas id="scene3d"></canvas>
-              <div class="labels3d" id="labels3d" aria-hidden="true"></div>
-              <div class="hud-card vec-legend" id="vec-legend" hidden></div>
-              <div class="hud-card fs-hud fs-only" id="fs-hud" aria-label="What the firmware is doing">
-                <div class="fs-row"><span class="k">Sail</span><span class="pill" id="fs-sail-src">—</span><b class="num" id="fs-sail">—</b></div>
-                <div class="fs-row"><span class="k">Rudder</span><span class="pill" id="fs-rudder-src">—</span><b class="num" id="fs-rudder">—</b></div>
-                <div class="fs-row"><span class="k">XBee</span><span class="v num" id="fs-xbee">—</span></div>
-                <div class="fs-row"><span class="k">Autopilot</span><span class="v num" id="fs-rpi">—</span></div>
-              </div>
-              <div class="hud-card nav-panel" aria-label="Boat and wind">
-                <svg class="compass" id="compass" viewBox="0 0 120 120" role="img" aria-label="Heading and true wind, turned to match the view"></svg>
-                <dl class="mini">
-                  <div><dt>Speed</dt><dd class="num"><span id="n-speed">0.00</span><small>kn</small></dd></div>
-                  <div><dt>Heading</dt><dd class="num"><span id="n-heading">000</span><small>°</small></dd></div>
-                  <div><dt>Heel</dt><dd class="num"><span id="n-heel">0</span><small>°</small></dd></div>
-                  <div><dt>Depth</dt><dd class="num"><span id="n-depth">—</span><small id="n-depth-unit"></small></dd></div>
-                  <div><dt>Wind</dt><dd class="num"><span id="n-wind">0.0</span><small>m/s</small></dd></div>
-                </dl>
-              </div>
-              <div class="toast3d" id="toast3d" hidden></div>
-              <p class="stage-note" id="stage-note" hidden></p>
-            </div>
-            <div class="transport">
-              <div class="transport-row">
-                <button class="btn primary" type="button" id="sim-pause" title="Pause or resume (Space)">
-                  <svg viewBox="0 0 16 16" aria-hidden="true" id="sim-pause-icon"><path d="M5 3.5h2v9H5zM9 3.5h2v9H9z" class="icon-fill"/></svg>
-                  <span id="sim-pause-label">Pause</span>
-                </button>
-                <button class="btn" type="button" id="sim-step" title="Advance one control tick, 50 ms (.)">Step</button>
-                <div class="seg" role="group" aria-label="Simulation speed">
-                  <button type="button" data-speed="1" aria-pressed="false" title="Real time">1×</button>
-                  <button type="button" data-speed="5" aria-pressed="false">5×</button>
-                  <button type="button" data-speed="20" aria-pressed="false">20×</button>
-                  <button type="button" data-speed="max" aria-pressed="false" title="As fast as this computer can">Max</button>
-                </div>
-                <span class="clock num" id="m-clock"><b id="m-time">0:00</b><span id="m-time-of"> / 0:00</span></span>
-              </div>
-              <div class="lanes" id="lanes">
-                <div class="lanes-head">
-                  <span class="lanes-title">Who had control</span>
-                  <div class="sim-legend" aria-hidden="true">
-                    <span><i class="sw-xbee"></i>Joystick</span>
-                    <span><i class="sw-rpi"></i>Autopilot</span>
-                    <span><i class="sw-none"></i>Nobody: motor off, rudder centred</span>
-                  </div>
-                </div>
-                <div class="lane-rows" role="img" aria-label="Which link the firmware obeyed for the sail and the rudder over the run">
-                  <div class="lane"><span class="lane-name">Sail</span><div class="lane-track" id="lane-sail"></div></div>
-                  <div class="lane"><span class="lane-name">Rudder</span><div class="lane-track" id="lane-rudder"></div></div>
-                  <div class="lane lane-axis"><span class="lane-name"></span><div class="lane-track" id="lane-ticks"></div></div>
-                  <div class="lane-overlay"><i class="playhead" id="playhead"></i></div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel firmware" aria-labelledby="fw-h">
-            <header>
-              <h2 id="fw-h">Firmware</h2>
-              <a class="meta link num" href="#checks" id="m-fw" title="Open Firmware checks">—</a>
-            </header>
-            <div class="fw-part">
-              <div class="fw-part-head"><h3>Sail</h3><span class="heads"><span class="pill neg" id="sail-pill" hidden></span><span class="pill" id="m-sail-src" title="The link the firmware is taking the sail command from">—</span></span></div>
-              <svg class="dial" id="sail-dial" viewBox="0 0 296 150" role="img" aria-label="Wing angle, what the firmware reads, and its target"></svg>
-              <table class="legend-table">
-                <tbody>
-                  <tr><td><svg class="swatch" viewBox="0 0 22 8"><line x1="1" y1="4" x2="21" y2="4" class="mk-true"/></svg></td><th scope="row">Wing</th><td class="num" id="sail-true">+0.0°</td></tr>
-                  <tr><td><svg class="swatch" viewBox="0 0 22 8"><line x1="1" y1="4" x2="21" y2="4" class="mk-read"/></svg></td><th scope="row">Firmware reads</th><td class="num" id="sail-read">+0°</td></tr>
-                  <tr><td><svg class="swatch" viewBox="0 0 22 8"><line x1="1" y1="4" x2="21" y2="4" class="mk-target"/></svg></td><th scope="row">Firmware target</th><td class="num" id="sail-target">+0°</td></tr>
-                  <tr><td></td><th scope="row">Sail motor</th><td id="sail-motor">Off</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="fw-part">
-              <div class="fw-part-head"><h3>Rudder</h3><span class="heads"><span class="pill neg" id="rudder-pill" hidden></span><span class="pill" id="m-rudder-src" title="The link the firmware is taking the rudder command from">—</span></span></div>
-              <svg class="bar" id="rudder-bar" viewBox="0 0 296 50" role="img" aria-label="Rudder angle and firmware target"></svg>
-              <table class="legend-table">
-                <tbody>
-                  <tr><td><svg class="swatch" viewBox="0 0 22 8"><line x1="1" y1="4" x2="21" y2="4" class="mk-true"/></svg></td><th scope="row">Rudder</th><td class="num" id="rudder-true">+0.0°</td></tr>
-                  <tr><td><svg class="swatch" viewBox="0 0 22 8"><line x1="1" y1="4" x2="21" y2="4" class="mk-target"/></svg></td><th scope="row">Firmware target</th><td class="num" id="rudder-target">+0°</td></tr>
-                  <tr><td></td><th scope="row">Servo pulse</th><td class="num" id="rudder-pulse-m">1370 µs</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="fw-part links">
-              <div class="fw-part-head"><h3>Links</h3></div>
-              <ul class="rows">
-                <li><span class="grow">XBee<span class="sub">joystick · times out after 2 s</span></span><span class="pill" id="m-xbee">Never heard</span></li>
-                <li><span class="grow">Raspberry Pi<span class="sub" id="m-rpi-sub">autopilot · times out after 10 s</span></span><span class="pill" id="m-rpi">Never heard</span></li>
-              </ul>
-              <p class="why" id="m-arbitration" hidden></p>
-            </div>
-          </section>
-        </div>
-
-        <div class="cols tests">
-          <section class="panel run-checks" aria-labelledby="checks-run-h">
-            <header>
-              <div class="head-title"><h2 id="checks-run-h">Checks for this run</h2><span class="meta num" id="m-checks">—</span></div>
-            </header>
-            <ul class="rows checks" id="run-checks"></ul>
-            <footer class="panel-foot">
-              <span class="hint" id="m-suite">The full suite runs the firmware's unit tests, every scenario and its properties.</span>
-              <a class="btn" href="#checks">Run every check</a>
-            </footer>
-          </section>
-          <section class="panel conditions" aria-labelledby="cond-h">
-            <header><h2 id="cond-h">Conditions</h2><span class="meta">change them while it runs</span></header>
-            <div class="sliders">
-              <label for="wdir">Wind from</label><input id="wdir" type="range" min="0" max="355" step="5" value="225"><output for="wdir" class="num" id="wdir-out">225°</output>
-              <label for="wspd">Speed</label><input id="wspd" type="range" min="0" max="12" step="0.5" value="4"><output for="wspd" class="num" id="wspd-out">4.0 m/s</output>
-              <label for="wgust">Gusts</label><input id="wgust" type="range" min="0" max="3" step="0.1" value="0.8"><output for="wgust" class="num" id="wgust-out">±0.8 m/s</output>
-            </div>
-            <div class="cond-row">
-              <span class="k" id="ap-label">Autopilot sends every</span>
-              <div class="seg" role="group" aria-labelledby="ap-label">
-                <button type="button" data-ap="500" aria-pressed="false">0.5 s</button>
-                <button type="button" data-ap="1000" aria-pressed="false">1 s</button>
-                <button type="button" data-ap="2000" aria-pressed="false">2 s</button>
-                <button type="button" data-ap="5000" aria-pressed="false">5 s</button>
-              </div>
-              <span class="hint" id="m-ap-note"></span>
-            </div>
-            <h3 class="sub-head" id="fault-h">Faults</h3>
-            <ul class="rows faults" aria-labelledby="fault-h">
-              <li><span class="grow">XBee silent<span class="sub">the joystick stops transmitting</span></span><button class="switch" type="button" role="switch" aria-checked="false" data-fault="xbee_silent" aria-label="XBee silent"></button></li>
-              <li><span class="grow">Autopilot silent<span class="sub">the Raspberry Pi stops sending</span></span><button class="switch" type="button" role="switch" aria-checked="false" data-fault="rpi_silent" aria-label="Autopilot silent"></button></li>
-              <li><span class="grow">Sail encoder stops<span class="sub">I2C reads fail, the last angle stays</span></span><button class="switch" type="button" role="switch" aria-checked="false" data-fault="encoder_stuck" aria-label="Sail encoder stops"></button></li>
-            </ul>
-          </section>
-        </div>
-      </section>
-
-      <!-- ===================================================== Firmware checks -->
-      <section class="view" id="view-checks" data-view="checks" aria-labelledby="checks-h" hidden>
-        <div class="title-row">
-          <div>
-            <h1 id="checks-h">Firmware checks</h1>
-            <p class="sub" id="checks-finding">Prove a firmware change here before it goes near the boat.</p>
-          </div>
-          <div class="title-actions">
-            <button class="btn" type="button" id="fw-rebuild">Rebuild and reload</button>
-            <button class="btn primary" type="button" id="fw-check">Run every check</button>
-          </div>
-        </div>
-
-        <section class="strip" aria-label="Firmware build">
-          <div class="cell">
-            <div class="label">Firmware</div>
-            <div class="value num"><span id="c-commit">—</span><small id="c-branch"></small></div>
-            <div class="note" id="c-edited">No edits</div>
-          </div>
-          <div class="cell">
-            <div class="label">Simulator build</div>
-            <div class="value num"><span id="c-built">—</span></div>
-            <div class="note" id="c-build-note"></div>
-          </div>
-          <div class="cell">
-            <div class="label">Rebuild on save</div>
-            <div class="value watch"><button class="switch" type="button" role="switch" aria-checked="false" id="fw-watch" aria-label="Rebuild when a firmware file changes"></button><span id="fw-watch-label">Off</span></div>
-            <div class="note">Rebuilds and restarts the run when a file in User/ changes</div>
-          </div>
-          <div class="cell">
-            <div class="label">Last run</div>
-            <div class="value num"><span id="c-passed">—</span><small id="c-passed-small"></small></div>
-            <div class="note" id="c-last"></div>
-          </div>
-        </section>
-
-        <section class="panel" id="build-panel" aria-labelledby="build-h" hidden>
-          <header><h2 id="build-h">Build output</h2><span class="meta" id="build-meta"></span></header>
-          <pre class="log build-log" id="build-log"></pre>
-        </section>
-
-        <section class="panel" aria-labelledby="results-h">
-          <header>
-            <h2 id="results-h">Results</h2>
-            <div class="seg" role="group" aria-label="Which results">
-              <button type="button" data-result-filter="all" aria-pressed="true">All</button>
-              <button type="button" data-result-filter="failed" aria-pressed="false">Failing</button>
-              <button type="button" data-result-filter="known" aria-pressed="false">Known issues</button>
-            </div>
-          </header>
-          <div class="table-wrap">
-            <table class="results">
-              <thead><tr><th>Result</th><th>Check</th><th>Why</th><th class="n">Time</th></tr></thead>
-              <tbody id="results"></tbody>
-            </table>
-          </div>
-          <p class="empty" id="results-empty" hidden></p>
-        </section>
-      </section>
-    </main>
   </div>
-</div>
+  <nav class="tabs wrapx" aria-label="Screens">
+    <a class="tab ica" href="#helm" data-section="helm" title="Ground station: steer and send the route"><span class="in"><i data-ic="helm"></i>Helm</span></a>
+    <a class="tab ica" href="#telemetry" data-section="telemetry" title="Ground station: what the boat sends back"><span class="in"><i data-ic="activity"></i>Telemetry</span></a>
+    <span class="tab-sep" aria-hidden="true"></span>
+    <a class="tab ica" href="#mission" data-section="mission" title="Simulator: run the boat and watch the firmware"><span class="in"><i data-ic="cube"></i><span>Mission<span class="long"> control</span></span></span></a>
+    <a class="tab ica" href="#checks" data-section="checks" title="Simulator: prove a firmware change"><span class="in"><i data-ic="checks"></i><span class="long">Firmware checks</span><span class="short">Checks</span><span class="count num" id="nav-checks-count"></span></span></a>
+  </nav>
+  <div class="lost" id="offline" role="status" hidden><i data-ic="alert"></i><span>Lost the connection to the Windbound service. Reconnecting… If you stopped it, start it again with <code>python3 sim/start.py</code>.</span></div>
+</header>
 
-<div class="popover" id="connection" role="dialog" aria-modal="false" aria-labelledby="conn-h" hidden>
-  <h2 id="conn-h">Ground station listens to</h2>
-  <ul class="rows choices" id="conn-choices"></ul>
-  <form class="conn-form" id="conn-form">
-    <label for="conn-url">Port or URL</label>
-    <input id="conn-url" type="text" placeholder="COM5 or socket://192.168.1.20:5760" autocomplete="off">
-    <label for="conn-baud">Baud</label>
-    <select id="conn-baud"><option>9600</option><option>57600</option><option selected>115200</option><option>230400</option></select>
-    <button class="btn primary" type="submit">Connect</button>
+<main class="sheet" id="sheet">
+  <!-- ===================================================== Helm -->
+  <section class="view wrapx" id="view-helm" data-view="helm" aria-labelledby="helm-h" hidden>
+    <div class="title-row">
+      <div class="tt">
+        <h1 id="helm-h">Helm</h1>
+        <p class="sub" id="helm-finding">Waiting for the controller</p>
+      </div>
+      <div class="title-actions">
+        <span class="stamp num" id="helm-stamp"><span class="dot off" aria-hidden="true"></span>No telemetry yet</span>
+      </div>
+    </div>
+
+    <section class="strip" aria-label="Links and mode">
+      <div class="cell">
+        <div class="label">Controller</div>
+        <div class="value num"><span id="gs-rate">0</span><small>lines/s</small></div>
+        <div class="note num" id="gs-rate-note">USB · 0 dropped · 0 overruns</div>
+      </div>
+      <div class="cell">
+        <div class="label">XBee commands</div>
+        <div class="value num"><span id="gs-xbee">—</span><small id="gs-xbee-unit">s · limit 2.0 s</small></div>
+        <div class="meter" aria-hidden="true"><i id="gs-xbee-meter"></i></div>
+        <div class="note" id="gs-xbee-note"></div>
+      </div>
+      <div class="cell">
+        <div class="label">Telemetry</div>
+        <div class="value num"><span id="gs-tel">—</span><small>s · stale at 2.5 s</small></div>
+        <div class="meter" aria-hidden="true"><i id="gs-tel-meter"></i></div>
+      </div>
+      <div class="cell">
+        <div class="label">Autopilot</div>
+        <div class="value num"><span id="gs-rpi">—</span><small id="gs-rpi-unit">s · limit 10 s</small></div>
+        <div class="meter" aria-hidden="true"><i id="gs-rpi-meter"></i></div>
+        <div class="note" id="gs-rpi-note"></div>
+      </div>
+      <div class="cell">
+        <div class="label">Boat mode</div>
+        <div class="value">Autonomous</div>
+        <div class="note">Fixed in firmware for now</div>
+      </div>
+    </section>
+
+    <div class="cols">
+      <section class="panel fill" aria-labelledby="map-h">
+        <header>
+          <div class="head-title"><h2 id="map-h">Lake Micmac</h2><span class="meta hide-phone">depth from the NS lake inventory, approximate</span></div>
+          <div class="seg" role="group" aria-label="Map shading">
+            <button type="button" data-map-base="depth" aria-pressed="true">Depth</button>
+            <button type="button" data-map-base="plain" aria-pressed="false">Plain</button>
+          </div>
+        </header>
+        <div class="mapgrid grow">
+          <div class="map" id="map">
+            <canvas id="map-canvas" aria-label="Map of Lake Micmac with the route and the boat. Click to add a waypoint."></canvas>
+            <div class="map-tools mpanel col">
+              <button class="mbtn icon ica" type="button" id="map-zoom-in" aria-label="Zoom in" title="Zoom in"><i data-ic="plus"></i></button>
+              <button class="mbtn icon ica" type="button" id="map-zoom-out" aria-label="Zoom out" title="Zoom out"><i data-ic="minus"></i></button>
+              <button class="mbtn icon ica" type="button" id="map-centre" aria-label="Centre on the boat" title="Centre on the boat"><i data-ic="crosshair"></i></button>
+            </div>
+            <div class="map-card legend" id="map-legend">
+              <div><svg viewBox="0 0 28 8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" class="lg-clear"/></svg>2.5 m or deeper</div>
+              <div><svg viewBox="0 0 28 8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" class="lg-caution"/></svg>2.0 to 2.5 m</div>
+              <div><svg viewBox="0 0 28 8" aria-hidden="true"><line x1="3" y1="4" x2="26" y2="4" class="lg-shallow"/></svg><span id="lg-draft">Under the 2.0 m draft</span></div>
+              <div id="lg-track-row"><svg viewBox="0 0 28 8" aria-hidden="true"><line x1="3" y1="4" x2="26" y2="4" class="lg-track"/></svg><span id="lg-track">Track</span></div>
+            </div>
+            <p class="map-empty" id="map-empty" hidden>No depth map. Set WINDBOUND_LAKE_DIR to the ground station's lake_depth_maps folder and restart the service.</p>
+          </div>
+          <div class="route">
+            <div class="route-head"><h3>Route</h3><span class="pill" id="route-pill" hidden></span></div>
+            <ol id="route-list"></ol>
+            <p class="route-note" id="route-note">Click the map to add a waypoint. Drag one to move it.</p>
+            <div class="route-foot">
+              <button class="btn ica" type="button" id="route-restore"><i data-ic="undo"></i>Restore</button>
+              <button class="btn primary ica" type="button" id="route-send"><i data-ic="send"></i>Send route</button>
+            </div>
+          </div>
+        </div>
+        <div class="instruments">
+          <div><div class="k">Heading</div><div class="v num" id="in-heading">—</div></div>
+          <div><div class="k">Target bearing</div><div class="v num" id="in-bearing">—</div></div>
+          <div><div class="k">Apparent wind</div><div class="v num" id="in-wind">—</div></div>
+          <div><div class="k">Position</div><div class="v num pos" id="in-position">—</div><div class="k" id="in-position-note"></div></div>
+        </div>
+      </section>
+
+      <section class="panel fill" aria-labelledby="cmd-h">
+        <header>
+          <h2 id="cmd-h">Commands</h2>
+          <div class="seg" role="group" aria-label="Who sends commands">
+            <button type="button" data-helm-source="joystick" aria-pressed="true">Joystick</button>
+            <button type="button" data-helm-source="laptop" aria-pressed="false">This laptop</button>
+          </div>
+        </header>
+        <div class="boat-fig">
+          <svg width="104" height="104" viewBox="0 0 200 200" id="helm-fig" role="img" aria-label="The boat from above: the solid sail is where the encoder says it is, the dashed one is the target"></svg>
+          <div>
+            <p class="fig-title" id="helm-tack">—</p>
+            <p class="hint" id="helm-hint">The joystick has the helm. The sliders show its last packet.</p>
+          </div>
+        </div>
+        <div class="axis">
+          <div class="axis-head"><label for="sail">Sail</label><output for="sail" class="num" id="sail-out">0°</output></div>
+          <input id="sail" type="range" min="-90" max="90" step="1" value="0">
+          <div class="ticks num"><span>−90°</span><span>−45°</span><span>0°</span><span>+45°</span><span>+90°</span></div>
+          <div class="chain">
+            <div class="step"><div class="k">You sent</div><div class="v num" id="sail-sent">—</div></div>
+            <div class="arrow" aria-hidden="true">›</div>
+            <div class="step"><div class="k">Boat uses</div><div class="v num" id="sail-uses">—</div></div>
+            <div class="arrow" aria-hidden="true">›</div>
+            <div class="step"><div class="k">Sail now</div><div class="v num" id="sail-now">—</div></div>
+          </div>
+          <p class="why" id="sail-why" hidden></p>
+        </div>
+        <div class="axis">
+          <div class="axis-head"><label for="rudder">Rudder</label><output for="rudder" class="num" id="rudder-out">0°</output></div>
+          <input id="rudder" type="range" min="-45" max="45" step="1" value="0">
+          <div class="ticks num"><span>45° port</span><span>0°</span><span>45° stbd</span></div>
+          <div class="chain">
+            <div class="step"><div class="k">You sent</div><div class="v num" id="rudder-sent">—</div></div>
+            <div class="arrow" aria-hidden="true">›</div>
+            <div class="step"><div class="k">Boat uses</div><div class="v num" id="rudder-uses">—</div></div>
+            <div class="arrow" aria-hidden="true">›</div>
+            <div class="step"><div class="k">Servo pulse</div><div class="v num" id="rudder-pulse">—</div></div>
+          </div>
+          <p class="why" id="rudder-why" hidden></p>
+        </div>
+        <div class="keys">
+          <span><kbd>W</kbd> <kbd>S</kbd> sail</span><span><kbd>A</kbd> <kbd>D</kbd> rudder</span><span><kbd>Shift</kbd> steps 5°</span><span><kbd>X</kbd> stop sending</span>
+          <span class="pad ica"><i data-ic="gamepad"></i><span id="gamepad-state">No gamepad. Connect one and press a button.</span></span>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===================================================== Telemetry -->
+  <section class="view wrapx" id="view-telemetry" data-view="telemetry" aria-labelledby="tel-h" hidden>
+    <div class="title-row">
+      <div class="tt">
+        <h1 id="tel-h">Telemetry</h1>
+        <p class="sub" id="tel-sub">What the boat sends back over the XBee, once a second.</p>
+      </div>
+      <div class="title-actions">
+        <button class="btn ica" type="button" id="log-download"><i data-ic="download"></i>Download log</button>
+      </div>
+    </div>
+    <div class="cols tel">
+      <section class="panel" aria-labelledby="packet-h">
+        <header><h2 id="packet-h">Latest packet</h2><span class="meta num" id="packet-meta"></span></header>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Field</th><th>Key</th><th class="n">Value</th><th>What to know</th></tr></thead>
+            <tbody id="packet-rows"></tbody>
+          </table>
+        </div>
+        <p class="raw num" id="packet-raw"></p>
+      </section>
+      <section class="panel fill" aria-labelledby="log-h">
+        <header>
+          <h2 id="log-h">Serial log</h2>
+          <div class="seg" role="group" aria-label="Which lines">
+            <button type="button" data-log-filter="all" aria-pressed="true">All</button>
+            <button type="button" data-log-filter="telemetry" aria-pressed="false">Telemetry</button>
+            <button type="button" data-log-filter="controller" aria-pressed="false">Controller</button>
+          </div>
+        </header>
+        <pre class="log grow scroll-thin" id="log" tabindex="0" aria-label="Serial log"></pre>
+        <div class="field-row">
+          <span class="hint num" id="log-count">0 lines</span>
+          <button class="btn sm" type="button" id="log-pause" aria-pressed="false">Pause</button>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===================================================== Mission control -->
+  <section class="view wrapx" id="view-mission" data-view="mission" aria-labelledby="mission-h" hidden>
+    <div class="title-row">
+      <div class="tt">
+        <h1 id="mission-h">Mission control</h1>
+        <p class="sub" id="mission-finding">Starting the simulator</p>
+      </div>
+      <div class="title-actions">
+        <label for="scenario" class="visually-hidden">Scenario</label>
+        <span class="selw"><select id="scenario" class="select"></select><i data-ic="updown"></i></span>
+        <button class="btn icon ica tip" type="button" id="sim-restart" aria-label="Restart the scenario" data-tip="Restart"><i data-ic="restart"></i></button>
+      </div>
+    </div>
+
+    <div class="cols mission">
+      <section class="panel run" id="run" aria-labelledby="run-h">
+        <header>
+          <div class="head-title">
+            <h2 id="run-h">The boat</h2>
+            <span class="meta bad" id="view3d-meta"></span>
+            <span class="meta fs-only" id="run-finding"></span>
+          </div>
+          <div class="head-controls">
+            <div class="seg" role="group" aria-label="Camera">
+              <button type="button" data-camera="orbit" aria-pressed="true" title="Stay with the boat; drag to look from any side (1)">Orbit</button>
+              <button type="button" data-camera="chase" aria-pressed="false" title="Sit behind the boat and turn with it (2)">Chase</button>
+              <button type="button" data-camera="top" aria-pressed="false" title="Look straight down at the depth chart, north up (3)">Top</button>
+            </div>
+            <div class="seg" role="group" aria-label="Show on the boat" data-multi>
+              <button type="button" data-vectors="forces" aria-pressed="false" title="Forces on the wing, keel, rudder and hull">Forces</button>
+              <button type="button" data-vectors="wind" aria-pressed="false" title="True and apparent wind">Wind</button>
+              <button type="button" data-vectors="motion" aria-pressed="false" title="Velocity and leeway">Motion</button>
+            </div>
+            <button class="btn icon ica" type="button" id="fullscreen" aria-pressed="false" aria-label="Full screen" title="Full screen (F)"><i data-ic="expand" id="fullscreen-icon"></i></button>
+          </div>
+        </header>
+        <div class="stage" id="stage">
+          <canvas id="scene3d"></canvas>
+          <div class="labels3d" id="labels3d" aria-hidden="true"></div>
+          <div class="hud-card vec-legend" id="vec-legend" hidden></div>
+          <div class="hud-card fs-hud fs-only" id="fs-hud" aria-label="What the firmware is doing">
+            <div class="fs-row"><span class="k">Sail</span><span class="pill" id="fs-sail-src">—</span><b class="num" id="fs-sail">—</b></div>
+            <div class="fs-row"><span class="k">Rudder</span><span class="pill" id="fs-rudder-src">—</span><b class="num" id="fs-rudder">—</b></div>
+            <div class="fs-row"><span class="k">XBee</span><span class="v num" id="fs-xbee">—</span></div>
+            <div class="fs-row"><span class="k">Autopilot</span><span class="v num" id="fs-rpi">—</span></div>
+          </div>
+          <div class="hud-card nav-panel" aria-label="Boat and wind">
+            <svg class="compass" id="compass" viewBox="0 0 120 120" role="img" aria-label="Heading and true wind, turned to match the view"></svg>
+            <dl class="mini">
+              <div><dt>Speed</dt><dd class="num"><span id="n-speed">0.00</span><small>kn</small></dd></div>
+              <div><dt>Heading</dt><dd class="num"><span id="n-heading">000</span><small>°</small></dd></div>
+              <div><dt>Heel</dt><dd class="num"><span id="n-heel">0</span><small>°</small></dd></div>
+              <div><dt>Depth</dt><dd class="num"><span id="n-depth">—</span><small id="n-depth-unit"></small></dd></div>
+              <div><dt>Wind</dt><dd class="num"><span id="n-wind">0.0</span><small>m/s</small></dd></div>
+            </dl>
+          </div>
+          <div class="toast3d" id="toast3d" hidden></div>
+          <p class="stage-note" id="stage-note" hidden></p>
+        </div>
+        <div class="transport">
+          <div class="transport-row">
+            <button class="btn primary ica" type="button" id="sim-pause" title="Pause or resume (Space)">
+              <i data-ic="pause" id="sim-pause-icon"></i>
+              <span id="sim-pause-label">Pause</span>
+            </button>
+            <button class="btn ica" type="button" id="sim-step" title="Advance one control tick, 50 ms (.)"><i data-ic="step"></i>Step</button>
+            <div class="seg" role="group" aria-label="Simulation speed">
+              <button type="button" data-speed="1" aria-pressed="false" title="Real time">1×</button>
+              <button type="button" data-speed="5" aria-pressed="false">5×</button>
+              <button type="button" data-speed="20" aria-pressed="false">20×</button>
+              <button type="button" data-speed="max" aria-pressed="false" title="As fast as this computer can">Max</button>
+            </div>
+            <span class="clock num" id="m-clock"><b id="m-time">0:00</b><span id="m-time-of"> / 0:00</span></span>
+          </div>
+          <div class="lanes" id="lanes">
+            <div class="lanes-head">
+              <h3 class="lanes-title">Who had control</h3>
+              <div class="sim-legend" aria-hidden="true">
+                <span><i class="sw-xbee"></i>Joystick</span>
+                <span><i class="sw-rpi"></i>Autopilot</span>
+                <span><i class="sw-none"></i>Nobody: motor off, rudder centred</span>
+              </div>
+            </div>
+            <div class="lane-rows" role="img" aria-label="Which link the firmware obeyed for the sail and the rudder over the run">
+              <div class="lane"><span class="lane-name">Sail</span><div class="lane-track" id="lane-sail"></div></div>
+              <div class="lane"><span class="lane-name">Rudder</span><div class="lane-track" id="lane-rudder"></div></div>
+              <div class="lane lane-axis"><span class="lane-name"></span><div class="lane-track" id="lane-ticks"></div></div>
+              <div class="lane-overlay"><i class="playhead" id="playhead"></i></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel firmware" aria-labelledby="fw-h">
+        <header>
+          <h2 id="fw-h">Firmware</h2>
+          <a class="meta link num" href="#checks" id="m-fw" title="Open Firmware checks">—</a>
+        </header>
+        <div class="fw-part">
+          <div class="fw-part-head"><h3>Sail</h3><span class="heads"><span class="pill neg" id="sail-pill" hidden></span><span class="pill" id="m-sail-src" title="The link the firmware is taking the sail command from">—</span></span></div>
+          <svg class="dial" id="sail-dial" viewBox="0 0 296 150" role="img" aria-label="Wing angle, what the firmware reads, and its target"></svg>
+          <table class="legend-table">
+            <tbody>
+              <tr><td><svg class="swatch" viewBox="0 0 22 8"><line x1="1" y1="4" x2="21" y2="4" class="mk-true"/></svg></td><th scope="row">Wing</th><td class="num" id="sail-true">+0.0°</td></tr>
+              <tr><td><svg class="swatch" viewBox="0 0 22 8"><line x1="1" y1="4" x2="21" y2="4" class="mk-read"/></svg></td><th scope="row">Firmware reads</th><td class="num" id="sail-read">+0°</td></tr>
+              <tr><td><svg class="swatch" viewBox="0 0 22 8"><line x1="1" y1="4" x2="21" y2="4" class="mk-target"/></svg></td><th scope="row">Firmware target</th><td class="num" id="sail-target">+0°</td></tr>
+              <tr><td></td><th scope="row">Sail motor</th><td id="sail-motor">Off</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="fw-part">
+          <div class="fw-part-head"><h3>Rudder</h3><span class="heads"><span class="pill neg" id="rudder-pill" hidden></span><span class="pill" id="m-rudder-src" title="The link the firmware is taking the rudder command from">—</span></span></div>
+          <svg class="bar" id="rudder-bar" viewBox="0 0 296 50" role="img" aria-label="Rudder angle and firmware target"></svg>
+          <table class="legend-table">
+            <tbody>
+              <tr><td><svg class="swatch" viewBox="0 0 22 8"><line x1="1" y1="4" x2="21" y2="4" class="mk-true"/></svg></td><th scope="row">Rudder</th><td class="num" id="rudder-true">+0.0°</td></tr>
+              <tr><td><svg class="swatch" viewBox="0 0 22 8"><line x1="1" y1="4" x2="21" y2="4" class="mk-target"/></svg></td><th scope="row">Firmware target</th><td class="num" id="rudder-target">+0°</td></tr>
+              <tr><td></td><th scope="row">Servo pulse</th><td class="num" id="rudder-pulse-m">1370 µs</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="fw-part links">
+          <div class="fw-part-head"><h3>Links</h3></div>
+          <ul class="rows">
+            <li><i data-ic="radio"></i><span class="grow">XBee<span class="sub">joystick · times out after 2 s</span></span><span class="pill" id="m-xbee">Never heard</span></li>
+            <li><i data-ic="plug"></i><span class="grow">Raspberry Pi<span class="sub" id="m-rpi-sub">autopilot · times out after 10 s</span></span><span class="pill" id="m-rpi">Never heard</span></li>
+          </ul>
+          <p class="why" id="m-arbitration" hidden></p>
+        </div>
+      </section>
+    </div>
+
+    <div class="cols tests">
+      <section class="panel run-checks" aria-labelledby="checks-run-h">
+        <header>
+          <div class="head-title"><h2 id="checks-run-h">Checks for this run</h2><span class="meta num" id="m-checks">—</span></div>
+        </header>
+        <ul class="rows checks" id="run-checks"></ul>
+        <footer class="panel-foot">
+          <span class="hint" id="m-suite">The full suite runs the firmware's unit tests, every scenario and its properties.</span>
+          <a class="btn ica" href="#checks"><i data-ic="checks"></i>Run every check</a>
+        </footer>
+      </section>
+      <section class="panel conditions" aria-labelledby="cond-h">
+        <header><h2 id="cond-h">Conditions</h2><span class="meta">change them while it runs</span></header>
+        <div class="sliders">
+          <label for="wdir">Wind from</label><input id="wdir" type="range" min="0" max="355" step="5" value="225"><output for="wdir" class="num" id="wdir-out">225°</output>
+          <label for="wspd">Speed</label><input id="wspd" type="range" min="0" max="12" step="0.5" value="4"><output for="wspd" class="num" id="wspd-out">4.0 m/s</output>
+          <label for="wgust">Gusts</label><input id="wgust" type="range" min="0" max="3" step="0.1" value="0.8"><output for="wgust" class="num" id="wgust-out">±0.8 m/s</output>
+        </div>
+        <div class="cond-row">
+          <span class="k" id="ap-label">Autopilot sends every</span>
+          <div class="seg" role="group" aria-labelledby="ap-label">
+            <button type="button" data-ap="500" aria-pressed="false">0.5 s</button>
+            <button type="button" data-ap="1000" aria-pressed="false">1 s</button>
+            <button type="button" data-ap="2000" aria-pressed="false">2 s</button>
+            <button type="button" data-ap="5000" aria-pressed="false">5 s</button>
+          </div>
+          <span class="hint" id="m-ap-note"></span>
+        </div>
+        <h3 class="sub-head" id="fault-h">Faults</h3>
+        <ul class="rows faults" aria-labelledby="fault-h">
+          <li><span class="grow">XBee silent<span class="sub">the joystick stops transmitting</span></span><button class="switch" type="button" role="switch" aria-checked="false" data-fault="xbee_silent" aria-label="XBee silent"></button></li>
+          <li><span class="grow">Autopilot silent<span class="sub">the Raspberry Pi stops sending</span></span><button class="switch" type="button" role="switch" aria-checked="false" data-fault="rpi_silent" aria-label="Autopilot silent"></button></li>
+          <li><span class="grow">Sail encoder stops<span class="sub">I2C reads fail, the last angle stays</span></span><button class="switch" type="button" role="switch" aria-checked="false" data-fault="encoder_stuck" aria-label="Sail encoder stops"></button></li>
+        </ul>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===================================================== Firmware checks -->
+  <section class="view wrapx" id="view-checks" data-view="checks" aria-labelledby="checks-h" hidden>
+    <div class="title-row">
+      <div class="tt">
+        <h1 id="checks-h">Firmware checks</h1>
+        <p class="sub" id="checks-finding">Prove a firmware change here before it goes near the boat.</p>
+      </div>
+      <div class="title-actions">
+        <button class="btn ica" type="button" id="fw-rebuild"><i data-ic="refresh"></i>Rebuild and reload</button>
+        <button class="btn primary ica" type="button" id="fw-check"><i data-ic="checks"></i><span id="fw-check-label">Run every check</span></button>
+      </div>
+    </div>
+
+    <section class="strip" aria-label="Firmware build">
+      <div class="cell">
+        <div class="label">Firmware</div>
+        <div class="value num"><span id="c-commit">—</span><small id="c-branch"></small></div>
+        <div class="note" id="c-edited">No edits</div>
+      </div>
+      <div class="cell">
+        <div class="label">Simulator build</div>
+        <div class="value num"><span id="c-built">—</span></div>
+        <div class="note" id="c-build-note"></div>
+      </div>
+      <div class="cell">
+        <div class="label">Rebuild on save</div>
+        <div class="value watch"><button class="switch" type="button" role="switch" aria-checked="false" id="fw-watch" aria-label="Rebuild when a firmware file changes"></button><span id="fw-watch-label">Off</span></div>
+        <div class="note">Rebuilds and restarts the run when a file in User/ changes</div>
+      </div>
+      <div class="cell">
+        <div class="label">Last run</div>
+        <div class="value num"><span id="c-passed">—</span><small id="c-passed-small"></small></div>
+        <div class="note" id="c-last"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="build-panel" aria-labelledby="build-h" hidden>
+      <header><h2 id="build-h">Build output</h2><span class="meta" id="build-meta"></span></header>
+      <pre class="log build-log scroll-thin" id="build-log"></pre>
+    </section>
+
+    <section class="panel" aria-labelledby="results-h">
+      <header>
+        <h2 id="results-h">Results</h2>
+        <div class="seg" role="group" aria-label="Which results">
+          <button type="button" data-result-filter="all" aria-pressed="true">All</button>
+          <button type="button" data-result-filter="failed" aria-pressed="false">Failing</button>
+          <button type="button" data-result-filter="known" aria-pressed="false">Known issues</button>
+        </div>
+      </header>
+      <div class="table-wrap">
+        <table class="results">
+          <thead><tr><th>Result</th><th>Check</th><th>Why</th><th class="n">Time</th></tr></thead>
+          <tbody id="results"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="results-empty" hidden></p>
+    </section>
+  </section>
+</main>
+
+<div class="pop" id="connection" role="dialog" aria-modal="false" aria-labelledby="conn-h" hidden>
+  <h2 class="pop-h" id="conn-h">Ground station listens to</h2>
+  <ul class="choices" id="conn-choices"></ul>
+  <div class="pop-sep"></div>
+  <form class="pop-form conn-form" id="conn-form">
+    <div class="field url"><label for="conn-url">Port or URL</label><input class="input" id="conn-url" type="text" placeholder="COM5 or socket://192.168.1.20:5760" autocomplete="off" spellcheck="false"></div>
+    <div class="field"><label for="conn-baud">Baud</label><span class="selw"><select class="select num" id="conn-baud"><option>9600</option><option>57600</option><option selected>115200</option><option>230400</option></select><i data-ic="updown"></i></span></div>
+    <button class="btn primary ica" type="submit"><i data-ic="plug"></i>Connect</button>
   </form>
-  <p class="hint" id="conn-error" role="alert"></p>
+  <p class="pop-error" id="conn-error" role="alert"></p>
+  <p class="pop-foot" id="side-note"></p>
 </div>
 
 <dialog class="shortcuts" id="shortcuts" aria-labelledby="shortcuts-h">
-  <header><h2 id="shortcuts-h">Keyboard shortcuts</h2><button class="btn ghost icon" type="button" id="shortcuts-close" aria-label="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" class="icon-stroke"/></svg></button></header>
+  <header><h2 id="shortcuts-h">Keyboard shortcuts</h2><button class="btn ghost icon ica" type="button" id="shortcuts-close" aria-label="Close"><i data-ic="x"></i></button></header>
   <div class="shortcuts-grid">
     <section>
       <h3>Mission control</h3>
@@ -525,6 +499,7 @@
     <section>
       <h3>Anywhere</h3>
       <dl>
+        <div><dt><kbd class="cmd-mod">⌘</kbd> <kbd>K</kbd></dt><dd>Search screens and actions</dd></div>
         <div><dt><kbd>?</kbd></dt><dd>This list</dd></div>
         <div><dt><kbd>Esc</kbd></dt><dd>Close a menu or leave full screen</dd></div>
       </dl>
@@ -532,8 +507,7 @@
   </div>
 </dialog>
 
-<div class="toast" id="toast" role="status" hidden></div>
-<div class="nav-scrim" id="nav-scrim" hidden></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
 
 <script type="module" src="/app.js"></script>
 </body>

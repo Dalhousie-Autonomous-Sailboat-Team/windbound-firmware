@@ -32,16 +32,16 @@ export const PALETTES = {
     exposure: 0.5, fog: 0xc3d3de, fogNear: 600, fogFar: 3600,
     sun: 0xfff1de, sunI: 3.4, hemiSky: 0xd8e6ee, hemiGround: 0x4c5944, hemi: 1.15,
     water: 0x1d4c5a, shallows: 0x4f8f88, waterRoughness: 0.13,
-    foam: 0xffffff, streak: 0xffffff, streakOpacity: 0.32, track: 0x101615, idle: 0xf2f2ee,
-    accent: 0x1b6c80, caution: 0xc98410, text: 0x121615, muted: 0x4e5655,
+    foam: 0xffffff, streak: 0xffffff, streakOpacity: 0.32, track: 0x171717, idle: 0xf2f2ee,
+    accent: 0x0b69a6, caution: 0xd6951a, text: 0x171717, muted: 0x5c5c64,
   },
   dark: {
     sunElevation: -2.6, sunAzimuth: 248, turbidity: 2.2, rayleigh: 3.6, mie: 0.003, mieG: 0.82,
     exposure: 1.45, fog: 0x283447, fogNear: 300, fogFar: 2600,
     sun: 0xffcaa0, sunI: 0.55, hemiSky: 0x6d84a8, hemiGround: 0x0b0f12, hemi: 1.3,
     water: 0x0d1f27, shallows: 0x22483f, waterRoughness: 0.12,
-    foam: 0xdfe9ec, streak: 0xffffff, streakOpacity: 0.2, track: 0xf1f4f3, idle: 0xc9cfcc,
-    accent: 0x5cb8cc, caution: 0xe0a73a, text: 0xf1f4f3, muted: 0xb0b8b6,
+    foam: 0xdfe9ec, streak: 0xffffff, streakOpacity: 0.2, track: 0xededef, idle: 0xc9cfcc,
+    accent: 0x5aaee3, caution: 0xe5a83b, text: 0xededef, muted: 0xa3a3ab,
   },
 };
 

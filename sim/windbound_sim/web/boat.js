@@ -196,8 +196,8 @@ function paintHull(material, colours) {
 }
 
 export const BOAT_COLOURS = {
-  topsides: 0xf3f4f1, stripe: 0x1b6c80, bottom: 0x23292d, deck: 0xd6d9d4, wing: 0xf4f5f2,
-  foil: 0x262c30, trim: 0x15191b, hatch: 0xb9beba, vane: 0x1b6c80,
+  topsides: 0xf3f4f1, stripe: 0x0b69a6, bottom: 0x23292d, deck: 0xd6d9d4, wing: 0xf4f5f2,
+  foil: 0x262c30, trim: 0x15191b, hatch: 0xb9beba, vane: 0x0b69a6,
 };
 
 export function buildDefaultBoat(geo) {

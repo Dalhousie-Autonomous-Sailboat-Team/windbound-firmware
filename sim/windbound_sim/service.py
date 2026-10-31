@@ -46,7 +46,8 @@ SCENE_CELL_M = 12.0
 MAP_CELL_M = 4.0
 MAX_BODY = 64 * 1024
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
-                 ".js": "text/javascript; charset=utf-8", ".svg": "image/svg+xml"}
+                 ".js": "text/javascript; charset=utf-8", ".svg": "image/svg+xml",
+                 ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8"}   # the bundled Geist and its licence
 
 
 def boat_geometry(params):

@@ -8,6 +8,7 @@
  * tick, F full screen, 1 2 3 orbit, chase and top cameras.
  */
 import { command, on, paintRange, section, store, theme, toast } from "/app.js";
+import { ic } from "/icons.js";
 import { Compass, RudderBar, SailDial } from "/instruments.js";
 import { KNOTS, SOURCE_NAMES, age, bearing, clock, signed, timeOfDay } from "/format.js";
 
@@ -19,13 +20,8 @@ let dial, bar, compass;
 let lastRoute = "";
 let lastDraw = 0;
 const DRAW_INTERVAL_MS = 100;   // panels redraw at 10 Hz; the 3D view takes every snapshot
-const ICONS = {
-  pause: '<path d="M5 3.5h2v9H5zM9 3.5h2v9H9z" class="icon-fill"/>',
-  play: '<path d="M5 3.5 12.5 8 5 12.5z" class="icon-fill"/>',
-  again: '<path d="M3.5 3v4h4M3.9 6.8A5 5 0 1 1 3.2 9.5" class="icon-stroke"/>',
-  enter: '<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" class="icon-stroke"/>',
-  leave: '<path d="M6 2.5V6H2.5M13.5 6H10V2.5M10 13.5V10h3.5M2.5 10H6v3.5" class="icon-stroke"/>',
-};
+const ICONS = { pause: "pause", play: "play", again: "restart", enter: "expand", leave: "shrink" };   // names in the icon set
+const setIcon = (id, name) => { $(id).outerHTML = ic(ICONS[name], "", id); };
 
 /* Set text only when it changes, so a 10 Hz redraw doesn't touch the page needlessly. */
 function text(id, value) {
@@ -92,7 +88,7 @@ async function loadScenarios() {
 }
 
 async function send(body) {
-  try { await command("sim", body); } catch (error) { toast(`The simulator refused that: ${error.message}`); }
+  try { await command("sim", body); } catch (error) { toast(`The simulator refused that: ${error.message}`, 7000, "neg"); }
 }
 
 function togglePause() {
@@ -193,7 +189,7 @@ function showFullscreen() {
   button.setAttribute("aria-pressed", String(full));
   button.setAttribute("aria-label", full ? "Leave full screen" : "Full screen");
   button.title = full ? "Leave full screen (F or Esc)" : "Full screen (F)";
-  $("fullscreen-icon").innerHTML = full ? ICONS.leave : ICONS.enter;
+  setIcon("fullscreen-icon", full ? "leave" : "enter");
   document.body.classList.toggle("run-expanded", $("run").classList.contains("expanded"));
 }
 
@@ -240,7 +236,7 @@ function showSim(sim) {
   const state = sim.finished ? "again" : sim.running ? "pause" : "play";
   if ($("sim-pause").dataset.state !== state) {
     $("sim-pause").dataset.state = state;
-    $("sim-pause-icon").innerHTML = ICONS[state];
+    setIcon("sim-pause-icon", state);
     text("sim-pause-label", { again: "Run again", pause: "Pause", play: "Resume" }[state]);
   }
   for (const b of document.querySelectorAll("[data-speed]")) {

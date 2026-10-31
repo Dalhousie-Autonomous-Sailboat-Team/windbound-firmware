@@ -51,7 +51,8 @@ def sim_state(service):
 def test_serves_the_page_and_its_files(service):
     status, page = request(service, "GET", "/")
     assert status == 200 and b'id="view-mission"' in page and b'id="view-helm"' in page
-    for name in ("app.css", "app.js", "scene3d.js", "world.js", "boat.js", "favicon.svg"):
+    for name in ("app.css", "app.js", "shell.js", "icons.js", "scene3d.js", "world.js", "boat.js", "favicon.svg",
+                 "Geist-Variable.woff2", "GeistMono-Variable.woff2", "OFL.txt"):
         assert request(service, "GET", f"/{name}")[0] == 200
 
 

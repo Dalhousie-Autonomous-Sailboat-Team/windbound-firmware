@@ -7,6 +7,7 @@
  * ages are exact; with a real controller those wait for telemetry v2.
  */
 import { command, on, paintRange, section, store, theme, toast } from "/app.js";
+import { ic } from "/icons.js";
 import { LakeMap } from "/map.js";
 import { SOURCE_NAMES, age, bearing, latlon, metres, pointOfSail, signed, windSide, wrap180 } from "/format.js";
 
@@ -104,7 +105,7 @@ function bindControls() {
 
 function setHelmSource(source) {
   if (source === "laptop" && store.ground?.source.kind !== "sim") {
-    toast("Sending commands from the laptop needs controller firmware support. The joystick has the helm.", 6000);
+    toast("Sending commands from the laptop needs controller firmware support. The joystick has the helm.", 6000, "warn");
     return;
   }
   helmSource = source;
@@ -130,7 +131,7 @@ function queueSend() {
     const key = JSON.stringify(body);
     if (key === lastSent) return;
     lastSent = key;
-    try { await command("sim", body); } catch (error) { toast(`Couldn't send: ${error.message}`); }
+    try { await command("sim", body); } catch (error) { toast(`Couldn't send: ${error.message}`, 7000, "neg"); }
   }, SEND_INTERVAL_MS);
 }
 
@@ -140,7 +141,7 @@ async function release(quiet = false) {
   try {
     await command("sim", { action: "release" });
     if (!quiet) toast("Stopped sending. The firmware drops the joystick 2 s after its last packet.");
-  } catch (error) { toast(`Couldn't stop sending: ${error.message}`); }
+  } catch (error) { toast(`Couldn't stop sending: ${error.message}`, 7000, "neg"); }
 }
 
 /* A gamepad steers like the real joystick: left stick for the sail, right stick for the rudder. */
@@ -173,13 +174,13 @@ function stopGamepad() { cancelAnimationFrame(gamepadLoop); gamepadLoop = null; 
 
 async function sendRoute() {
   if (store.ground?.source.kind !== "sim") {
-    toast("Sending a route to the real boat isn't wired yet: it needs a link to the Raspberry Pi.", 6000);
+    toast("Sending a route to the real boat isn't wired yet: it needs a link to the Raspberry Pi.", 6000, "warn");
     return;
   }
   try {
     await command("sim", { action: "waypoints", waypoints: route.map((p) => [p.lat, p.lon]) });
     toast(route.length ? `Sent ${route.length} waypoints. The autopilot sails them in order.` : "Cleared the route.");
-  } catch (error) { toast(`Couldn't send the route: ${error.message}`); }
+  } catch (error) { toast(`Couldn't send the route: ${error.message}`, 7000, "neg"); }
 }
 
 function showRoute() {
@@ -204,7 +205,7 @@ function showRoute() {
     if (depth === null) { detail = "On land"; bad = true; }
     else if (depth !== undefined) detail += ` · ${depth.toFixed(1)} m deep`;
     li.innerHTML = `<span class="wp-mark ${markClass}">${i + 1}</span><div class="wp-text"><div class="nm"></div><div class="dt${bad ? " bad" : ""}"></div></div>
-      <button class="remove" type="button" aria-label="Remove waypoint ${i + 1}"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3 3 9" class="icon-stroke"/></svg></button>`;
+      <button class="remove ica" type="button" aria-label="Remove waypoint ${i + 1}">${ic("x")}</button>`;
     li.querySelector(".nm").textContent = `Waypoint ${i + 1}`;
     li.querySelector(".dt").textContent = detail;
     li.querySelector(".remove").addEventListener("click", () => { route.splice(i, 1); showRoute(); });

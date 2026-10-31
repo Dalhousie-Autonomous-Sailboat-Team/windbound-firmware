@@ -12,9 +12,11 @@ const SAFE_M = 2.5;
 const SAMPLE_M = 2;
 const HIT_PX = 14;
 
+/* Water shaded in the lake-inventory blue the ground station's contours use;
+   water under the draft in the pale amber of its shallow legs. */
 const PALETTE = {
-  light: { shallow: [214, 233, 234], deep: [86, 146, 162], plain: [212, 231, 234], shoal: [240, 228, 199] },
-  dark: { shallow: [30, 54, 60], deep: [12, 82, 100], plain: [24, 44, 50], shoal: [62, 52, 34] },
+  light: { shallow: [228, 238, 246], deep: [118, 160, 194], plain: [225, 235, 243], shoal: [247, 233, 202] },
+  dark: { shallow: [22, 35, 47], deep: [30, 79, 117], plain: [21, 33, 45], shoal: [52, 41, 22] },
 };
 
 /* Line segments (as col, row pairs) where the depth crosses `level` metres:
@@ -216,7 +218,7 @@ export class LakeMap {
     const [ax, ay] = this.toScreen(l.north, l.west), [bx, by] = this.toScreen(l.south, l.east);
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(this.depthImage, ax, ay, bx - ax, by - ay);
-    if (this.base !== "plain") this.drawLines(ctx, this.draftLine, css("--caution"), 1, 0.75, ax, ay, bx, by);
+    if (this.base !== "plain") this.drawLines(ctx, this.draftLine, css("--shallow"), 1, 0.75, ax, ay, bx, by);
     this.drawLines(ctx, this.shore, css("--muted"), 1.25, 0.9, ax, ay, bx, by);
     return canvas;
   }
@@ -257,7 +259,7 @@ export class LakeMap {
 
   drawRoute() {
     const ctx = this.ctx, route = this.route;
-    const colours = { clear: css("--accent"), caution: css("--caution"), shallow: css("--negative"), unknown: css("--faint") };
+    const colours = { clear: css("--deep"), caution: css("--shallow"), shallow: css("--under"), unknown: css("--unknown") };
     const dashes = { clear: [], caution: [8, 4], shallow: [1, 6], unknown: [3, 4] };
     if (this.boat && this.active >= 0 && this.active < route.length && this.reached < route.length) {
       const [x0, y0] = this.toScreen(this.boat.lat, this.boat.lon);
@@ -273,7 +275,7 @@ export class LakeMap {
       const [x0, y0] = this.toScreen(a.lat, a.lon), [x1, y1] = this.toScreen(b.lat, b.lon);
       ctx.save();
       ctx.lineCap = "round";
-      ctx.strokeStyle = css("--casing"); ctx.lineWidth = 9;
+      ctx.strokeStyle = css("--surface"); ctx.lineWidth = 9;
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
       // Each run of the same class drawn in its own style.
       const n = profile.classes.length;
@@ -294,7 +296,7 @@ export class LakeMap {
       ctx.restore();
     }
     ctx.save();
-    ctx.font = `600 12px ${css("--font")}`;
+    ctx.font = `600 12px ${css("--sans")}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     route.forEach((p, i) => {
@@ -305,7 +307,7 @@ export class LakeMap {
       ctx.fillStyle = active ? css("--accent") : css("--surface");
       ctx.fill();
       ctx.lineWidth = active ? 2.5 : 2;
-      ctx.strokeStyle = active ? css("--casing") : done ? css("--control") : css("--text");
+      ctx.strokeStyle = active ? css("--surface") : done ? css("--control") : css("--text");
       ctx.stroke();
       ctx.fillStyle = active ? css("--primary-ink") : done ? css("--faint") : css("--text");
       ctx.fillText(String(i + 1), x, y + 0.5);
@@ -325,7 +327,7 @@ export class LakeMap {
     ctx.moveTo(0, -17); ctx.bezierCurveTo(6.5, -8, 7.5, 5, 5, 15); ctx.lineTo(-5, 15);
     ctx.bezierCurveTo(-7.5, 5, -6.5, -8, 0, -17); ctx.closePath();
     ctx.fillStyle = css("--text");
-    ctx.strokeStyle = css("--casing");
+    ctx.strokeStyle = css("--surface");
     ctx.lineWidth = 1.6;
     ctx.fill(); ctx.stroke();
     ctx.restore();
@@ -340,10 +342,10 @@ export class LakeMap {
     ctx.save();
     ctx.strokeStyle = css("--text"); ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(x0, y - 5); ctx.lineTo(x0, y); ctx.lineTo(x1, y); ctx.lineTo(x1, y - 5); ctx.stroke();
-    ctx.font = `500 12px ${css("--font")}`;
+    ctx.font = `500 12px ${css("--sans")}`;
     ctx.fillStyle = css("--text");
     ctx.textAlign = "right";
-    ctx.lineWidth = 4; ctx.strokeStyle = css("--casing");
+    ctx.lineWidth = 4; ctx.strokeStyle = css("--surface");
     const label = metres >= 1000 ? `${metres / 1000} km` : `${metres} m`;
     ctx.strokeText(label, x1, y - 9); ctx.fillText(label, x1, y - 9);
     ctx.restore();

@@ -28,7 +28,7 @@ export function initChecks() {
 }
 
 async function run(body) {
-  try { await command("firmware", body); } catch (error) { toast(`Couldn't start that: ${error.message}`); }
+  try { await command("firmware", body); } catch (error) { toast(`Couldn't start that: ${error.message}`, 7000, "neg"); }
 }
 
 function show(proof) {
@@ -52,7 +52,7 @@ function show(proof) {
   $("fw-watch-label").textContent = watch ? "On" : "Off";
   $("fw-rebuild").disabled = build.state === "building" || checks.state === "running";
   $("fw-check").disabled = checks.state === "running" || build.state === "building";
-  $("fw-check").textContent = checks.state === "running" ? "Running…" : "Run every check";
+  $("fw-check-label").textContent = checks.state === "running" ? "Running…" : "Run every check";
 
   const panel = $("build-panel");
   panel.hidden = build.state !== "failed";
