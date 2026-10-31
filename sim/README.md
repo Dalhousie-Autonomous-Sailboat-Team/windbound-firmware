@@ -66,8 +66,9 @@ Press **?** anywhere for the keyboard shortcuts.
 
 ## What's on screen
 
-The sidebar has two groups. **Ground station** is the joystick's GUI;
-**Simulator** is mission control for the simulated boat.
+The screens are tabs along the top, in two groups. **Helm** and **Telemetry**
+are the joystick's ground station; **Mission control** and **Firmware checks**
+are the simulator's.
 
 - **Helm**: the lake map with the route and the depth along each leg (the
   sandy water is shallower than the keel), the commands you're sending and
@@ -80,9 +81,11 @@ The sidebar has two groups. **Ground station** is the joystick's GUI;
 - **Firmware checks**: which firmware is loaded, rebuild and reload, and the
   results of every test against it.
 
-The sun and moon in the top bar switch between light (an afternoon on the
-lake) and dark (just after sunset). **Stop boat** silences both links, the
-only thing that makes the firmware stop the sail and centre the rudder.
+The top bar switches the theme between your system's, light (an afternoon
+on the lake) and dark (just after sunset). **⌘K** (Ctrl K on Windows and
+Linux) searches the screens and runs any action. **Stop boat** silences both
+links, the only thing that makes the firmware stop the sail and centre the
+rudder.
 
 ## Sail the team's own navigation
 
@@ -155,8 +158,9 @@ English with a fix idea for each, are in [KNOWN_ISSUES.md](../KNOWN_ISSUES.md).
 - **"CMake isn't installed" or the firmware won't build**: install the three
   things above. On Windows, open a *new* terminal after installing so the
   PATH changes take effect.
-- **The 3D view says it couldn't load**: it loads three.js and the fonts from
-  the internet the first time you open it; after that the browser has them.
+- **The 3D view says it couldn't load**: it loads three.js from the internet
+  the first time you open it; after that the browser has it. The fonts ship
+  with the page.
 - **Port 8765 is busy**: the launcher picks the next free port and prints it.
   If Windbound is already running, it just opens that one.
 - **No lake, just open water**: put
