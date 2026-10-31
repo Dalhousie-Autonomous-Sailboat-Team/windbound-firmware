@@ -52,6 +52,12 @@ class Arrow {
     this.label.position.copy(dir).multiplyScalar(length + 0.25);
   }
   recolor(p) { this.material.color.set(p[this.colorKey]); }
+  dispose() {
+    this.group.remove(this.label);       // three.js takes a label off the page only when the label itself is removed
+    this.material.dispose();
+    this.shaft.geometry.dispose();
+    this.head.geometry.dispose();
+  }
 }
 
 export class Vectors {
@@ -91,6 +97,11 @@ export class Vectors {
 
   recolor(p) {
     for (const set of Object.values(this.sets)) for (const arrow of Object.values(set)) arrow.recolor(p);
+  }
+
+  /* Done with these arrows (a new run builds its own). */
+  dispose() {
+    for (const set of Object.values(this.sets)) for (const arrow of Object.values(set)) arrow.dispose();
   }
 
   /* state: a live_state() snapshot. Returns the legend rows for what is shown. */

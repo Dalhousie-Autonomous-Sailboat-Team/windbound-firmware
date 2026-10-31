@@ -101,6 +101,7 @@ export class BoatView {
     for (const part of [this.lake?.group, this.boat?.group, this.vectors?.group]) {
       if (part) part.parent.remove(part);
     }
+    this.vectors?.dispose();
     this.info = info;
     this.lake = info.lake ? makeLake(info.lake) : null;
     if (this.lake) this.scene.add(this.lake.group);
