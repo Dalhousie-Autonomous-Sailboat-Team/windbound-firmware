@@ -61,3 +61,16 @@ def test_windvane_angle_is_forwarded_to_the_rpi():
     fw = Firmware()
     assert fw.receive_windvane("$IIMWV,45.0,R,7.8,N,A*2B\r\n")
     assert fw.wind_angle_for_rpi() == 45
+
+
+def test_the_rpi_gets_the_wind_speed_and_whether_the_vane_is_working():
+    import json
+
+    fw = Firmware()
+    fw.set_time(10_000)
+    assert fw.receive_windvane("$IIMWV,87.6,R,8.0,N,A*3F")
+    line = json.loads(fw.sensor_input_line(10_400))["SensorInput"][0]
+    assert line == {"windAngle": 87, "windSpeed": 4.1, "windRef": "R", "windValid": 1}
+    assert json.loads(fw.sensor_input_line(13_100))["SensorInput"][0]["windValid"] == 0   # over 3 s old
+    assert fw.receive_windvane("$IIMWV,87.6,R,8.0,N,V*28")                               # the vane says invalid
+    assert json.loads(fw.sensor_input_line(13_200))["SensorInput"][0]["windValid"] == 0

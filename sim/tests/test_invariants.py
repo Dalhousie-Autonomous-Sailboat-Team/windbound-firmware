@@ -150,9 +150,6 @@ def test_xbee_commands_parse_back_to_what_was_sent():
         assert math.isclose(cmd.sail_angle, sail, abs_tol=2e-4) and math.isclose(cmd.rud_angle, rudder, abs_tol=2e-4)
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "StringToFloat keeps 4 decimals, so positions and waypoints from the Raspberry Pi are "
-    "rounded to about 11 m."))
 def test_rpi_positions_keep_metre_precision():
     fw = Firmware()
     rng = random.Random(7)

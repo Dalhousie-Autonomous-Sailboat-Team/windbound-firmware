@@ -210,45 +210,82 @@ bool AppProtocol_FormatTelemetry(char *buf, size_t len, const RPiSample_t *rpi,
 
 float StringToFloat(const char *str)
 {
+    /* Plain decimal with an optional exponent ("-63.553012", "1.2e-05").
+     * Every digit counts: the old version kept four decimals, about 11 m of
+     * latitude, and stopped at an 'e'. Accumulates in double; the result is
+     * float, good to about half a metre at Halifax's latitude. */
     if (str == NULL || *str == '\0')
         return 0.0f;
 
-    char *tmpSign = (str[0] == '-') ? "-" : "";
-    if (str[0] == '-' || str[0] == '+')
-        str++;
-
-    int tmpInt1 = 0;
-    while (*str && *str != '.')
+    bool negative = false;
+    if (*str == '-' || *str == '+')
     {
-        if (*str < '0' || *str > '9')
-            break;
-        tmpInt1 = tmpInt1 * 10 + (*str - '0');
+        negative = (*str == '-');
         str++;
     }
 
-    int tmpInt2 = 0;
-    int decimal_digits = 0;
+    double value = 0.0;
+    while (*str >= '0' && *str <= '9')
+    {
+        value = value * 10.0 + (double)(*str - '0');
+        str++;
+    }
     if (*str == '.')
     {
+        double scale = 0.1;
         str++;
-        while (*str && decimal_digits < 4)
+        while (*str >= '0' && *str <= '9')
         {
-            if (*str < '0' || *str > '9')
-                break;
-            tmpInt2 = tmpInt2 * 10 + (*str - '0');
-            decimal_digits++;
+            value += (double)(*str - '0') * scale;
+            scale *= 0.1;
             str++;
         }
     }
-
-    while (decimal_digits < 4)
+    if (*str == 'e' || *str == 'E')
     {
-        tmpInt2 *= 10;
-        decimal_digits++;
+        bool negative_exponent = false;
+        int exponent = 0;
+        str++;
+        if (*str == '-' || *str == '+')
+        {
+            negative_exponent = (*str == '-');
+            str++;
+        }
+        while (*str >= '0' && *str <= '9' && exponent < 64)
+        {
+            exponent = exponent * 10 + (*str - '0');
+            str++;
+        }
+        while (exponent-- > 0)
+            value = negative_exponent ? value / 10.0 : value * 10.0;
     }
+    return (float)(negative ? -value : value);
+}
 
-    float result = (float)tmpInt1 + ((float)tmpInt2 / 10000.0f);
-    return (tmpSign[0] == '-') ? -result : result;
+bool AppProtocol_FormatSensorInput(char *buf, size_t len, const WindSample_t *wind,
+                                   uint32_t now_ms)
+{
+    if (buf == NULL || wind == NULL || len == 0)
+        return false;
+
+    /* $IIMWV speed units: N knots, M m/s, K km/h, S statute mph. */
+    float speed = wind->speed;
+    switch (wind->speed_unit)
+    {
+    case 'N': speed *= 0.514444f; break;
+    case 'K': speed /= 3.6f; break;
+    case 'S': speed *= 0.44704f; break;
+    default: break;
+    }
+    int tenths = speed > 0.0f ? (int)(speed * 10.0f + 0.5f) : 0;
+    bool valid = wind->status == 'A' && (uint32_t)(now_ms - wind->timestamp) < WIND_STALE_MS;
+    char reference = (wind->reference == 'T') ? 'T' : 'R';
+
+    int written = snprintf(buf, len,
+                           "{\"SensorInput\":[{\"windAngle\":%d,\"windSpeed\":%d.%d,"
+                           "\"windRef\":\"%c\",\"windValid\":%d}]}\r\n",
+                           (int)wind->direction, tenths / 10, tenths % 10, reference, valid ? 1 : 0);
+    return written > 0 && (size_t)written < len;
 }
 
 void FloatToString(float value, char *buf)

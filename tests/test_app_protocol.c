@@ -1,6 +1,8 @@
 #include "app_protocol.h"
 #include "test_harness.h"
 
+#include <string.h>
+
 static const char *valid_rpi_packet =
     "{\"TargetsOutput\":[{"
     "\"targetBearing\":91.5,"
@@ -22,6 +24,42 @@ static void string_to_float_handles_sign_and_precision(void)
     TEST_EXPECT_FLOAT_NEAR(1.2345f, StringToFloat("+1.23456"), 0.0001f);
     TEST_EXPECT_FLOAT_NEAR(0.0f, StringToFloat(NULL), 0.0001f);
     TEST_EXPECT_FLOAT_NEAR(0.0f, StringToFloat("not-a-number"), 0.0001f);
+}
+
+static void string_to_float_keeps_precision_and_exponents(void)
+{
+    /* Positions need metres: 0.00001 degrees of latitude is 1.1 m. */
+    TEST_EXPECT_FLOAT_NEAR(44.692512f, StringToFloat("44.692512"), 0.000005f);
+    TEST_EXPECT_FLOAT_NEAR(-63.553012f, StringToFloat("-63.553012"), 0.000005f);
+    /* Python writes small numbers with an exponent. */
+    TEST_EXPECT_FLOAT_NEAR(0.000012f, StringToFloat("1.2e-05"), 0.0000001f);
+    TEST_EXPECT_FLOAT_NEAR(1500.0f, StringToFloat("1.5E+3"), 0.001f);
+    TEST_EXPECT_FLOAT_NEAR(-0.5f, StringToFloat("-5e-1"), 0.000001f);
+}
+
+static void sensor_input_reports_speed_and_validity(void)
+{
+    WindSample_t wind = {87.6f, 'R', 8.0f, 'N', 'A', "00", 1000U};
+    char buffer[128];
+
+    TEST_EXPECT_TRUE(AppProtocol_FormatSensorInput(buffer, sizeof(buffer), &wind, 1500U));
+    /* 8 knots is 4.1 m/s; the angle stays a whole number, as before. */
+    TEST_EXPECT_STRING("{\"SensorInput\":[{\"windAngle\":87,\"windSpeed\":4.1,"
+                       "\"windRef\":\"R\",\"windValid\":1}]}\r\n", buffer);
+
+    /* Stale, flagged invalid by the vane, or never heard: not valid. */
+    TEST_EXPECT_TRUE(AppProtocol_FormatSensorInput(buffer, sizeof(buffer), &wind,
+                                                   1000U + WIND_STALE_MS));
+    TEST_EXPECT_TRUE(strstr(buffer, "\"windValid\":0") != NULL);
+    wind.status = 'V';
+    TEST_EXPECT_TRUE(AppProtocol_FormatSensorInput(buffer, sizeof(buffer), &wind, 1500U));
+    TEST_EXPECT_TRUE(strstr(buffer, "\"windValid\":0") != NULL);
+    WindSample_t never = {0};
+    TEST_EXPECT_TRUE(AppProtocol_FormatSensorInput(buffer, sizeof(buffer), &never, 1500U));
+    TEST_EXPECT_TRUE(strstr(buffer, "\"windValid\":0") != NULL);
+
+    char small[16];
+    TEST_EXPECT_FALSE(AppProtocol_FormatSensorInput(small, sizeof(small), &wind, 1500U));
 }
 
 static void float_to_string_rounds_to_nearest_integer(void)
@@ -146,7 +184,11 @@ int main(void)
 {
     TestHarness_Run("string-to-float handles sign and precision",
                     string_to_float_handles_sign_and_precision);
+    TestHarness_Run("string-to-float keeps precision and exponents",
+                    string_to_float_keeps_precision_and_exponents);
     TestHarness_Run("float-to-string rounds", float_to_string_rounds_to_nearest_integer);
+    TestHarness_Run("sensor input reports speed and validity",
+                    sensor_input_reports_speed_and_validity);
     TestHarness_Run("XBee parser extracts commands", xbee_parser_extracts_signed_commands);
     TestHarness_Run("XBee parser rejects incomplete packets",
                     xbee_parser_rejects_incomplete_packets);

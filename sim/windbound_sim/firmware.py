@@ -181,6 +181,9 @@ def _load(path):
                                                     C.POINTER(RPiSample),
                                                     C.POINTER(EncoderSample)]
         lib.AppProtocol_FormatTelemetry.restype = C.c_bool
+        lib.AppProtocol_FormatSensorInput.argtypes = [C.c_char_p, C.c_size_t, C.POINTER(WindSample),
+                                                      C.c_uint32]
+        lib.AppProtocol_FormatSensorInput.restype = C.c_bool
         _check_layouts(lib)
         _library = lib
     return _library
@@ -276,3 +279,11 @@ class Firmware:
         sample = WindSample()
         self.lib.Wind_GetLatest(C.byref(sample))
         return int(sample.direction)
+
+    def sensor_input_line(self, now_ms):
+        """The SensorInput line RpiTransmitTask sends to the Raspberry Pi, without its CR LF."""
+        sample = WindSample()
+        self.lib.Wind_GetLatest(C.byref(sample))
+        buf = C.create_string_buffer(128)
+        self.lib.AppProtocol_FormatSensorInput(buf, 128, C.byref(sample), now_ms % 2**32)
+        return buf.value.decode().rstrip("\r\n")

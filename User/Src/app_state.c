@@ -25,6 +25,7 @@ void Wind_UpdateLatest(const WindSample_t *sample)
 {
     osMutexAcquire(windMutexHandle, osWaitForever);
     wind_latest = *sample;
+    wind_latest.timestamp = osKernelGetTickCount();
     osMutexRelease(windMutexHandle);
 }
 

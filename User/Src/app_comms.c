@@ -156,8 +156,10 @@ static void ProcessXbeeData(uint8_t data)
 
 static void ProcessRaspberryData(uint8_t data)
 {
-    static char rpi_packet[256]; // also bumped size — your packet is ~120 chars
-    static uint8_t index = 0;
+    /* A TargetsOutput line is about 250 characters with full-precision
+     * positions, and a uint8_t index can't count past 255. */
+    static char rpi_packet[512];
+    static uint16_t index = 0;
     static bool collecting = false;
     static uint8_t brace_depth = 0;
 
@@ -271,14 +273,9 @@ void RpiTransmitTask(void *argument)
 
     while (true)
     {
-
         Wind_GetLatest(&sample);
-        snprintf(tx_buf, sizeof(tx_buf),
-                 "{\"SensorInput\":[{\"windAngle\":%d}]}\r\n",
-                 (int)sample.direction);
-
-        RPi_Send(tx_buf);
+        if (AppProtocol_FormatSensorInput(tx_buf, sizeof(tx_buf), &sample, osKernelGetTickCount()))
+            RPi_Send(tx_buf);
         osDelay(500);
-
     }
 }
