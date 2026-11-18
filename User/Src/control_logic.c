@@ -12,7 +12,7 @@
 #define RPI_TIMEOUT_MS 10000U // 2x the send rate
 
 /* Compensate for the rudder linkage's mechanical center misalignment. */
-#define RUDDER_ANGLE_OFFSET_PWM -130.0f
+#define RUDDER_ANGLE_OFFSET_PWM 0.0f
 
 /*
  * Map sail commands (-45 to +45 degrees sail range) to the AS5600's 0-to-360-degree
