@@ -73,9 +73,6 @@ def test_operator_can_centre_the_rudder_while_the_autopilot_runs(run_scenario):
     assert abs(sim.samples[-1].rudder_deg) < 1.0
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "-45 deg maps to 970 us with the -130 us trim, below the servo's 1000 us "
-    "minimum; BoatControlTask writes the timer without clamping."))
 def test_full_rudder_lock_stays_within_the_servo_range(run_scenario):
     sim = run_scenario("full-rudder-lock")
     assert sim.rudder.out_of_range_pulses == 0

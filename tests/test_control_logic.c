@@ -205,7 +205,7 @@ static void zero_xbee_values_defer_to_fresh_rpi_values(void)
     EXPECT_FLOAT_NEAR(-45.0f, output.target_rudder_angle, 0.001f);
     EXPECT_U16(0U, output.sail_motor_channel_1_pwm);
     EXPECT_U16(12800U, output.sail_motor_channel_2_pwm);
-    EXPECT_U16(970U, output.rudder_pwm);
+    EXPECT_U16(1000U, output.rudder_pwm);       /* -45 degrees, held at the servo's minimum */
 }
 
 static void sail_position_dead_band_is_one_degree(void)

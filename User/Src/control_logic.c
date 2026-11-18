@@ -11,8 +11,6 @@
 #define XBEE_TIMEOUT_MS 2000U // 2x the send rate
 #define RPI_TIMEOUT_MS 10000U // 2x the send rate
 
-/* Compensate for the rudder linkage's mechanical center misalignment. */
-#define RUDDER_ANGLE_OFFSET_PWM -130.0f
 
 /*
  * Map sail commands (-45 to +45 degrees sail range) to the AS5600's 0-to-360-degree
@@ -128,10 +126,15 @@ void ControlLogic_Evaluate(const ControlLogicInput_t *input, ControlLogicOutput_
         result.sail_motor_channel_2_pwm = MOTOR_OFF;
     }
 
-    /* Direct rudder control maps +/-45 degrees to +/-400 PWM around center. */
-    float rudder_center = 1500.0f + RUDDER_ANGLE_OFFSET_PWM;
-    result.rudder_pwm =
-        (uint16_t)(rudder_center + (result.target_rudder_angle / 45.0f) * 400.0f);
+    /* Direct rudder control maps +/-45 degrees to +/-400 us around the centre,
+     * held inside the servo's range: with the trim, -45 degrees alone would
+     * ask for 970 us. */
+    float rudder_pulse = (float)RUDDER_PWM_CENTRE_US + (result.target_rudder_angle / 45.0f) * 400.0f;
+    if (rudder_pulse < (float)RUDDER_PWM_MIN_US)
+        rudder_pulse = (float)RUDDER_PWM_MIN_US;
+    if (rudder_pulse > (float)RUDDER_PWM_MAX_US)
+        rudder_pulse = (float)RUDDER_PWM_MAX_US;
+    result.rudder_pwm = (uint16_t)rudder_pulse;
 
     *output = result;
 }

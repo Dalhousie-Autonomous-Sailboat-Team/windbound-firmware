@@ -131,11 +131,17 @@ def test_the_sail_motor_turns_the_short_way_and_holds_inside_the_dead_band(lib):
 
 # ----- the rudder ------------------------------------------------------------- #
 
-def test_the_rudder_pulse_follows_the_target(lib):
+def test_the_rudder_pulse_follows_the_target_within_the_servo_range(lib):
     rng = random.Random(5)
     for _ in range(CASES):
         out = evaluate(lib, *random_inputs(rng))
-        assert out.rudder_pwm == int(CENTRE_US + out.target_rudder_angle / 45.0 * 400.0)
+        assert out.rudder_pwm == max(1000, min(2000, int(CENTRE_US + out.target_rudder_angle / 45.0 * 400.0)))
+
+
+def test_every_rudder_command_gives_a_pulse_the_servo_accepts(lib):
+    for rudder in [r / 2 for r in range(-200, 201)]:          # -100 to +100 degrees
+        out = evaluate(lib, 1000, xbee=(10.0, rudder or 0.1, 1000))
+        assert 1000 <= out.rudder_pwm <= 2000, (rudder, out.rudder_pwm)
 
 
 # ----- the protocol ----------------------------------------------------------- #

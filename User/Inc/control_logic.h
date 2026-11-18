@@ -16,6 +16,15 @@ typedef struct
 } ControlLogicInput_t;
 
 /* Which command link a target came from. */
+/*
+ * The rudder servo's pulse, in microseconds (TIM1 counts at 1 MHz): centred
+ * at 1500 us less the linkage's 130 us trim, +/-400 us for +/-45 degrees, and
+ * never outside the servo's 1000-2000 us.
+ */
+#define RUDDER_PWM_CENTRE_US 1370U
+#define RUDDER_PWM_MIN_US 1000U
+#define RUDDER_PWM_MAX_US 2000U
+
 typedef enum
 {
     CONTROL_SOURCE_NONE = 0, /* no fresh link: sail motor off, rudder centred */

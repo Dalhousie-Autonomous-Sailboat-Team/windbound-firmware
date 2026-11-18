@@ -140,8 +140,9 @@ void PWM_Init(void)
      * Configuration set in CubeMX
      */
 
-    /* Initialize servo PWM duty cycle to 1500 */
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 6400);
+    /* Start the rudder servo centred. (This wrote 6400, a 6.4 ms pulse at the
+     * 1 MHz count, until BoatControlTask's first update.) */
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, RUDDER_PWM_CENTRE_US);
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 
     /* Initialize Motor PWM duty cycles to 0 */
