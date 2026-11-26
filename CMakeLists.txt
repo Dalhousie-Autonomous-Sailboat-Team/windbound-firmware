@@ -65,6 +65,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Src/encoder.c
     User/Src/pid.c
     User/Src/system_tasks.c
+    User/Src/radio_api.c
 )
 
 # Add include paths
@@ -77,6 +78,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
+    RADIOMODE       // ========= IF SET HERE PCB USES API W/O ESCAPES MDOE, IF REMOVED IT REVERTS TO TRANSPARENT MODE =========
 )
 
 # Remove wrong libob.a library dependency when using cpp files

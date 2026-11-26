@@ -23,6 +23,12 @@
 #include "stm32h5xx_hal.h"
 #include "app_freertos.h"
 
+#ifdef RADIOMODE
+#include "FreeRTOS.h"
+#include "task.h"
+#include "radio_api.h"
+#endif
+
 #define DEBUG_PORT UART_PORT_4
 
 // Define externs to be used in i2c comms
@@ -123,6 +129,55 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
 
 /* ================================================ UART ======================================================*/
 
+#ifdef RADIOMODE
+/* UART8 ISR produces bytes. UARTParserTask reads them in short critical sections. */
+static uint8_t radio_rx_buffer[512];
+static volatile uint16_t radio_rx_head;
+static volatile uint16_t radio_rx_tail;
+static volatile uint32_t radio_rx_drops;
+static volatile uint32_t radio_rx_errors;
+
+static uint16_t RadioRx_Next(uint16_t index)
+{
+    return (uint16_t)((index + 1U) % sizeof(radio_rx_buffer));
+}
+
+size_t BoardRadio_Read(uint8_t *out, size_t capacity, uint32_t *drops, uint32_t *errors)
+{
+    size_t count = 0U;
+    taskENTER_CRITICAL();
+    if (*drops != radio_rx_drops || *errors != radio_rx_errors) {
+        /* Bytes on either side of a gap must reach the parser separately. */
+        radio_rx_tail = radio_rx_head;
+        *drops = radio_rx_drops;
+        *errors = radio_rx_errors;
+    }
+    while (count < capacity && radio_rx_tail != radio_rx_head) {
+        out[count++] = radio_rx_buffer[radio_rx_tail];
+        radio_rx_tail = RadioRx_Next(radio_rx_tail);
+    }
+    if (huart8.RxState == HAL_UART_STATE_READY)
+        HAL_UART_Receive_IT(&huart8, &uart8_rx_byte, 1U);
+    taskEXIT_CRITICAL();
+    return count;
+}
+
+bool BoardRadio_TxIdle(void)
+{
+    return huart8.gState == HAL_UART_STATE_READY;
+}
+
+bool BoardRadio_StartTx(uint8_t *bytes, uint16_t length)
+{
+    return HAL_UART_Transmit_IT(&huart8, bytes, length) == HAL_OK;
+}
+
+void BoardRadio_AbortTx(void)
+{
+    HAL_UART_AbortTransmit(&huart8);
+}
+#endif /* RADIOMODE */
+
 /**
  * @brief Initializes UART peripherals for interrupt-driven reception.
  */
@@ -197,6 +252,9 @@ bool RPi_Send(const char *string)
 
 bool Radio_Send(const char *string)
 {
+#ifdef RADIOMODE
+    return RadioApi_QueueTelemetry(string);
+#else
     if (string == NULL)
         return false;
 
@@ -216,6 +274,7 @@ bool Radio_Send(const char *string)
     }
 
     return true;
+#endif
 }
 
 /**
@@ -245,10 +304,20 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
     else if (huart == &huart8)
     {
+#ifdef RADIOMODE
+        const uint16_t next = RadioRx_Next(radio_rx_head);
+        if (next != radio_rx_tail) {
+            radio_rx_buffer[radio_rx_head] = uart8_rx_byte;
+            radio_rx_head = next;
+        } else {
+            ++radio_rx_drops;
+        }
+#else
         UART_Char_t uart_char;
         uart_char.port = UART_PORT_8;
         uart_char.data = uart8_rx_byte;
         osMessageQueuePut(uart_rx_queueHandle, &uart_char, 0, 0);
+#endif
         HAL_UART_Receive_IT(huart, &uart8_rx_byte, 1);
     }
 
@@ -268,11 +337,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
+#ifndef RADIOMODE
     if (huart == &huart8)
     {
         osSemaphoreRelease(radio_tx_semaphoreHandle);
     }
-    else if (huart == &huart7)
+    else
+#endif
+    if (huart == &huart7)
     {
         osSemaphoreRelease(raspberry_tx_semaphoreHandle);
     }
@@ -284,6 +356,12 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
  */
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
+#ifdef RADIOMODE
+    if (huart == &huart8) {
+        ++radio_rx_errors;
+        return;
+    }
+#endif
     if (huart == &huart4)
     {
         /* Restart Interrupt Character Reception for UART4 */

@@ -26,6 +26,10 @@
 #include "app_protocol.h"
 #include "encoder.h"
 
+#ifdef RADIOMODE
+#include "radio_api.h"
+#endif
+
 
 #define BACKSPACE_CHAR '\177'
 #define NULL_CHAR '\0'
@@ -105,53 +109,57 @@ static void ProcessWindvaneData(uint8_t data)
     }
 }
 
-static void ProcessXbeeData(uint8_t data)
+static char xbee_packet[64];
+static uint8_t xbee_index;
+static bool xbee_collecting;
+
+static void ResetXbeeData(void)
 {
-    /* Future implementation for UART8 data from Xbee */
-    // Debug_Print("Received data from Xbee\r\n");
+    xbee_index = 0U;
+    xbee_collecting = false;
+}
 
-    static char xbee_packet[64];
-    static uint8_t index = 0;
-    static bool collecting = false;
-
-    // Debug_Print("Received data from Xbee\r\n");
-    // snprintf(xbee_packet, sizeof(xbee_packet), "Received char: %c\r\n", data);
-    // Debug_Print((char[]){(char)data, '\0'});
-
+static bool ProcessXbeeData(uint8_t data)
+{
     // Start collecting on '{'
     if (data == '{')
     {
-        index = 0;
-        collecting = true;
+        xbee_index = 0U;
+        xbee_collecting = true;
     }
 
-    if (!collecting)
-        return;
+    if (!xbee_collecting)
+        return false;
 
     // Overflow protection
-    if (index >= sizeof(xbee_packet) - 1)
+    if (xbee_index >= sizeof(xbee_packet) - 1U)
     {
-        collecting = false;
-        index = 0;
-        return;
+        ResetXbeeData();
+        return false;
     }
 
-    xbee_packet[index++] = data;
+#ifdef RADIOMODE
+    if (data == '\0') {
+        ResetXbeeData();
+        return false;
+    }
+#endif
+    xbee_packet[xbee_index++] = (char)data;
 
     // End of packet on '\n'
     if (data == '\n')
     {
-        collecting = false;
-        xbee_packet[index] = '\0';
-        index = 0;
+        xbee_packet[xbee_index] = '\0';
+        ResetXbeeData();
 
-        XbeeCommand_t cmd;
+        XbeeCommand_t cmd = {0};
         if (AppProtocol_ParseXbeeCommand(xbee_packet, &cmd))
         {
             Xbee_UpdateLatest(&cmd);
-            // Debug_Print("Parsed Xbee command\r\n");
+            return true;
         }
     }
+    return false;
 }
 
 static void ProcessRaspberryData(uint8_t data)
@@ -206,35 +214,39 @@ static void ProcessRaspberryData(uint8_t data)
 }
 
 void UARTParserTask(void *argument)
-
 {
+    (void)argument;
     UART_Char_t uart_char;
+#ifdef RADIOMODE
+    /* Poll UART8 at least every 5 ms while other UARTs are quiet. */
+    const uint32_t queue_wait = (osKernelGetTickFreq() + 199U) / 200U;
+    RadioApi_Init(ProcessXbeeData, ResetXbeeData);
+#else
+    const uint32_t queue_wait = osWaitForever;
+#endif
     BoardUART_Init();
     while (true)
     {
-        osMessageQueueGet(uart_rx_queueHandle, &uart_char, NULL, osWaitForever);
-
-        switch (uart_char.port)
-        {
-        case UART_PORT_4: // data from PC debug
-            // ProcessDebugData(uart_char.data);
-            break;
-
-        case UART_PORT_3: // data from windvane
-            ProcessWindvaneData(uart_char.data);
-            break;
-
-        case UART_PORT_8: // data from radio
-            ProcessXbeeData(uart_char.data);
-            break;
-
-        case UART_PORT_7: // data from Raspberry Pi
-            ProcessRaspberryData(uart_char.data);
-            break;
-
-        default:
-            continue;
+        if (osMessageQueueGet(uart_rx_queueHandle, &uart_char, NULL, queue_wait) == osOK) {
+            switch (uart_char.port) {
+            case UART_PORT_3:
+                ProcessWindvaneData(uart_char.data);
+                break;
+            case UART_PORT_7:
+                ProcessRaspberryData(uart_char.data);
+                break;
+#ifndef RADIOMODE
+            case UART_PORT_8:
+                ProcessXbeeData(uart_char.data);
+                break;
+#endif
+            default:
+                break;
+            }
         }
+#ifdef RADIOMODE
+        RadioApi_Poll();
+#endif
     }
 }
 
@@ -255,8 +267,12 @@ void TelemetryTask(void *argument)
         Encoder_GetLatest(&sail_enc);
         
         /* ── 3. Format and transmit ──────────────────────────────── */
+#ifdef RADIOMODE
+        static char buf[TELEMETRY_BUF_LEN];
+#else
         char buf[TELEMETRY_BUF_LEN];
-        snprintf(buf, sizeof(buf),
+#endif
+        const int length = snprintf(buf, sizeof(buf),
                  "{"
                  "\"tb\":%d,"
                  "\"tlat\":%d,"
@@ -281,9 +297,11 @@ void TelemetryTask(void *argument)
                  (int)rpi.current_bearing,
                  (int)rpi.current_wind_angle,
                  (int)sail_enc.angle);
-        // UserUART_Transmit(UART_PORT_XBEE, (uint8_t *)buf, strlen(buf));
-        Radio_Send(buf);
-        //Debug_Print(buf);
+        if (length > 0 && (size_t)length < sizeof(buf))
+            Radio_Send(buf);
+#ifdef RADIOMODE
+        RadioApi_PrintDiagnostics();
+#endif
         /* ── 4. Fixed period ─────────────────────────────────────── */
         osDelay(TELEMETRY_PERIOD_MS);
     }

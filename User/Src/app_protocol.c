@@ -85,15 +85,61 @@ static const char *JSON_FindValue(const char *packet, const char *key)
     return NULL;
 }
 
+#ifdef RADIOMODE
+/* Match the existing decimal command syntax and the control logic's travel. */
+static bool ParseXbeeAngle(const char *value, const char *packet_end, float *out)
+{
+    if (value == NULL || value >= packet_end)
+        return false;
+
+    while (*value == ' ' || *value == '\t')
+        ++value;
+    const char *end = value;
+    if (*end == '+' || *end == '-')
+        ++end;
+
+    unsigned whole = 0U;
+    bool has_digit = false;
+    while (*end >= '0' && *end <= '9') {
+        whole = whole * 10U + (unsigned)(*end++ - '0');
+        if (whole > 45U)
+            return false;
+        has_digit = true;
+    }
+    if (*end == '.') {
+        ++end;
+        while (*end >= '0' && *end <= '9') {
+            if (whole == 45U && *end != '0')
+                return false;
+            ++end;
+            has_digit = true;
+        }
+    }
+    while (*end == ' ' || *end == '\t')
+        ++end;
+    if (!has_digit || (end != packet_end && *end != ','))
+        return false;
+
+    *out = StringToFloat(value);
+    return true;
+}
+#endif
+
 bool AppProtocol_ParseXbeeCommand(const char *packet, XbeeCommand_t *cmd)
 {
     if (packet == NULL || cmd == NULL)
         return false;
 
-    if (packet[0] != '{' || strchr(packet, '}') == NULL)
+    const char *packet_end = strchr(packet, '}');
+    if (packet[0] != '{' || packet_end == NULL)
         return false;
 
     const char *sa_val = JSON_FindValue(packet, "sa:");
+#ifdef RADIOMODE
+    const char *ra_val = JSON_FindValue(packet, "ra:");
+    return ParseXbeeAngle(sa_val, packet_end, &cmd->sail_angle) &&
+           ParseXbeeAngle(ra_val, packet_end, &cmd->rud_angle);
+#else
     if (sa_val == NULL)
         return false;
     cmd->sail_angle = StringToFloat(sa_val);
@@ -104,6 +150,7 @@ bool AppProtocol_ParseXbeeCommand(const char *packet, XbeeCommand_t *cmd)
     cmd->rud_angle = StringToFloat(ra_val);
 
     return true;
+#endif
 }
 
 bool AppProtocol_ParseRpiSample(const char *packet, RPiSample_t *rpi)
